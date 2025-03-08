@@ -1,0 +1,234 @@
+
+  
+  
+  /* Consolidated and optimized CSS */
+
+.size-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 1rem;
+  }
+  
+  .size-item {
+    display: flex;
+    align-items: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: 20px;
+    flex-direction: row;
+    justify-content: space-between;
+    min-width: 140px;
+    padding: 12px;
+    font-size: 12px;
+    gap: 10px;
+  }
+  
+  .size-item-buttons {
+    display: flex;
+    align-items: center;
+    justify-content:space-between;
+    width: 60px;
+    margin-top: 0px;
+    
+  }
+  
+  .size-button {
+    background-color: #f2f4f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 18px;
+    width: 17px;
+    color: white;
+    padding: 0px;
+    font-size: 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .size-button:hover {
+    background-color: #ece2dd;;
+  }
+  
+  .size-button:disabled {
+
+    cursor: not-allowed;
+  }
+  
+  
+  .thumbnail-image {
+    width: 100%;
+   /* Added for better mobile control */
+    height: auto;
+   
+    object-fit: cover;
+    border-radius: 15px;
+  }
+  
+  .cart-item {
+    border-bottom: 3px solid #eee;
+    padding: 0rem 0rem 4rem 0rem;
+  }
+  
+  .order-summary {
+    position: sticky;
+    top: 1rem;
+  }
+  
+
+
+
+  /* Enhanced mobile styles */
+  @media (max-width: 425px) {
+    .cart-item {
+      flex-direction: column;
+      text-align: center;
+    }
+  
+    .thumbnail-image {
+      margin: 0 auto 1rem;
+    }
+  
+    .size-container {
+      flex-direction: row;
+      gap: 10px;
+    }
+
+  
+    .size-item-buttons {
+      margin-top: 0;
+      gap: 15px;
+    }
+  
+    .size-button {
+      font-size: 18px;
+      height: 20px;
+      width: 15px;
+    }
+  }
+
+
+.black-line {
+    border-bottom: 4px solid #eee;
+    padding: 1rem 0rem 0.3rem 0rem;
+    }
+    
+.delete-button {
+    color: #dc3545; 
+    background-color: #ffffff;
+    padding: 0px;
+    font-size: 20px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    }
+.delete-button:hover {
+    color: #c82333; /* Darker red on hover */
+    background-color: #ffffff;
+
+}
+
+
+/* check out box */
+
+.order-summary {
+  width: 300px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  background-color: #ffffff;
+  box-shadow: 1px 1px 20px rgba(0, 0, 0, 0.2);
+  
+}
+
+.title {
+  margin: 0 0 20px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.subtotal-row {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  color: #666;
+  font-size: 14px;
+}
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  color: #666;
+  font-size: 14px;
+  font-weight: bold;
+  padding-top:10px ;
+  border-top: 4px solid #eee;
+}
+.checkout-button {
+  width: 100%;
+  height: 36px;
+  padding: 0px 28px;
+  margin: 20px 0;
+  background-color:#ff6600;
+  color: white;
+  font-family: "Inter",Arial, Helvetica, sans-serif;
+  border: none;
+  border-radius: 100px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.checkout-button:hover {
+  background-color: #e55b00;
+}
+
+.protected-section h3 {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.protection-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.protection-list li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #444;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #999;
+  border-radius: 3px;
+  margin-right: 8px;
+}
+
+.badges {
+  margin-left: auto;
+  gap: 3px;
+}
+
+.badge {
+  padding: 2px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: bold;
+  width: auto;
+  height: 20px;
+}
+

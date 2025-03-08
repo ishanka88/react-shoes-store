@@ -1,0 +1,50 @@
+.size-toggle{
+    border-radius: 5px;
+    background-color: rgb(218, 210, 210);
+    max-width: 200px;
+    color: black;
+    height: 25px;
+    padding: 12px 12px;
+    text-transform: capitalize;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+  
+}
+.size-toggle:hover{
+    background-color: green;
+    transition: none;
+    color: white;
+}
+
+.size-chart{
+    color: rgb(47, 47, 228);
+    text-decoration: underline;
+    padding-top:5px;
+    font-size:12px;
+}
+    .size-chart:hover{
+        color: rgb(17, 29, 143);
+        cursor: pointer;
+    }
+
+.out-of-stock{
+    color: #FF0000;
+    font-style: italic;
+    padding-left:10px ;
+    display: flex;
+    align-items: center;
+    
+}
+
+.hidden {
+    display: none;
+  }
+
+/* Disable pointer events and make it look disabled */
+.disabled {
+    pointer-events: none;   /* Prevents clicking */
+    opacity: 0.8;           /* Makes it look visually disabled */
+  }
+  
+
