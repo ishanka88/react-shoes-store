@@ -14,7 +14,7 @@ import { TabContent, TabPane } from "reactstrap";
 import { collection,  getDocs, query ,orderBy, limit} from 'firebase/firestore';
 import { Product } from "../models/Products";
 
-import{db} from "../firebaseConfig"
+import{db} from "../firebase/firebase"
 
 
 

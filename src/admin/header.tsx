@@ -5,7 +5,7 @@ import img1 from "../assets/img/icon/card.svg";
 import { RouteName } from "../RouteName";
 import { NavLink } from "react-router-dom";
 
-import{auth} from "../firebaseConfig"
+import{auth} from "../firebase/firebase"
 
 
 const AdminHeader: React.FC = () => {

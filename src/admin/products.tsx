@@ -11,7 +11,7 @@ import { CUSTOMERS, PRODUCTS, CONTACTUS } from "../dbUtils";
 import Swal from "sweetalert2";
 import { DragDropContext, Droppable, Draggable ,DropResult,DroppableProps} from 'react-beautiful-dnd';
 
-import{db} from "../firebaseConfig"
+import{db} from "../firebase/firebase"
 
 // AWS S3 SDK setup
 import AWS from 'aws-sdk';

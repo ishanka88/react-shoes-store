@@ -3,7 +3,7 @@ import { AppResponse } from "../models/Response";
 import { User, UserDetails } from "../models/User";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { addDoc, collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
-import { auth, db } from "../firebaseConfig";
+import { auth, db } from "../firebase/firebase";
 import { CUSTOMERS } from "../dbUtils";
 
 export interface UserLoginData {

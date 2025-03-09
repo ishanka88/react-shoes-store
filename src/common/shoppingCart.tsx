@@ -24,7 +24,7 @@ import {  collection, getDocs, query, where, documentId } from 'firebase/firesto
 import { Product } from "../models/Products";
 
 
-import{db} from "../firebaseConfig"
+import{db} from "../firebase/firebase"
 
 // interface CartItem {
 //   id: number;
