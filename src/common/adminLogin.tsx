@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AuthService } from "../services/AuthService";
-import { NavLink, useHistory } from "react-router-dom";
+import {useHistory } from "react-router-dom";
 import Swal from 'sweetalert2'
 
 const Login: React.FC = () => {

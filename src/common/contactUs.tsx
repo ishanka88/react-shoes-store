@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import { Contact } from "../models/Contactus";
 import { AdminService } from "../services/AdminService";
 import Swal from "sweetalert2";

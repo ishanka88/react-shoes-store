@@ -1,4 +1,4 @@
-import React, { useEffect, useState,useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 import "./App.css";
 import "./assets/css/bootstrap.min.css";
@@ -31,10 +31,7 @@ import AddProducts from "./admin/products";
 import Orders from "./admin/orders";
 import ContactData from "./admin/contact";
 
-import { Redirect } from 'react-router-dom';
 import{auth} from "./firebaseConfig"
-
-
 
 
 

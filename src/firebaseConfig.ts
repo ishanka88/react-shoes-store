@@ -4,6 +4,7 @@ import { getFirestore } from "firebase/firestore"
 
 
 
+
 // const firebaseConfig = {
 //   apiKey: "AIzaSyB34ETDWoWzo5ZynOQND2f_6OCsCdChEkk",
 //   authDomain: "salicta-c56ad.firebaseapp.com",

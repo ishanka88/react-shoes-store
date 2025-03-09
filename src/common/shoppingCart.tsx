@@ -7,12 +7,11 @@ import img1 from "../assets/img/icon/services1.svg";
 import img2 from "../assets/img/icon/services2.svg";
 import img3 from "../assets/img/icon/services3.svg";
 import img4 from "../assets/img/icon/services4.svg";
-import img5 from "../assets/img/gallery/card1.png";
-import img6 from "../assets/img/gallery/card2.png";
+
 import img7 from "../assets/img/icon/master.avif";
 import img8 from "../assets/img/icon/visa.avif";
 import { NavLink } from "react-router-dom";
-import { RouteName } from "../RouteName";
+
 
 
 
@@ -20,12 +19,10 @@ import "./shoppingCart.css";
 import './index.css'
 
 
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, query, where, documentId } from 'firebase/firestore';
+
+import {  collection, getDocs, query, where, documentId } from 'firebase/firestore';
 import { Product } from "../models/Products";
-import { Bold } from "lucide-react";
-import { color } from "framer-motion";
+
 
 import{db} from "../firebaseConfig"
 

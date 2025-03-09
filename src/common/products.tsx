@@ -4,10 +4,9 @@ import img2 from "../assets/img/icon/services2.svg";
 import img3 from "../assets/img/icon/services3.svg";
 import img4 from "../assets/img/icon/services4.svg";
 import { Carousel } from 'react-bootstrap';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDoc, getDocs, query, where, and,orderBy } from 'firebase/firestore';
-import Swal from "sweetalert2";
+
+import { collection, getDocs, query,orderBy } from 'firebase/firestore';
+
 import { Product } from "../models/Products";
 import { TabContent, TabPane } from 'reactstrap';
 import classNames from "classnames";

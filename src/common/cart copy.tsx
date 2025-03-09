@@ -3,10 +3,7 @@ import img1 from "../assets/img/icon/services1.svg";
 import img2 from "../assets/img/icon/services2.svg";
 import img3 from "../assets/img/icon/services3.svg";
 import img4 from "../assets/img/icon/services4.svg";
-import img5 from "../assets/img/gallery/card1.png";
-import img6 from "../assets/img/gallery/card2.png";
-import { NavLink } from "react-router-dom";
-import { RouteName } from "../RouteName";
+
 
 
 import { Product } from "../models/Products";

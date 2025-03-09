@@ -4,11 +4,8 @@ import img1 from "../assets/img/icon/services1.svg";
 import img2 from "../assets/img/icon/services2.svg";
 import img3 from "../assets/img/icon/services3.svg";
 import img4 from "../assets/img/icon/services4.svg";
-import img5 from "../assets/img/gallery/about1.png";
-import img6 from "../assets/img/gallery/about2.png";
-import img7 from "../assets/img/gallery/insta.png";
-import img8 from "../assets/img/gallery/instra1.png";
-import img9 from "../assets/img/gallery/instra2.png";
+
+
 import sizechartImage1 from "../assets/img/sizeCharts/sizechart.jpeg";
 
 
