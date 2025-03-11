@@ -24,6 +24,9 @@ import { CartItem } from "../models/CartItem";
 
 import SizeChartTopUp from "./elements/sizeChartTopUp"
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+
 
 
 import './productPage.css'
@@ -488,14 +491,14 @@ const ProductPage: React.FC = () => {
                                         onClick={handlePrevious}
                                         aria-label="Previous media"
                                       >
-                                        <FaChevronLeft size={20} />
+                                        <FontAwesomeIcon icon={faChevronLeft} />
                                       </button>
                                       <button 
                                         className="nav-arrow next-arrow"
                                         onClick={handleNext}
                                         aria-label="Next media"
                                       >
-                                        <FaChevronRight size={20} />
+                                        <FontAwesomeIcon icon={faChevronRight} />
                                       </button>
                                     </div>
 
@@ -536,7 +539,7 @@ const ProductPage: React.FC = () => {
                                         onClick={handlePrevChunk}
                                         aria-label="Previous media"
                                       >
-                                        <FaChevronLeft size={20} /> <FaChevronLeft size={20} />
+                                        <FontAwesomeIcon icon={faChevronLeft} />
                                       
                                       </button>
                                       <button 
@@ -544,7 +547,7 @@ const ProductPage: React.FC = () => {
                                         onClick={handleNextChunk}
                                         aria-label="Next media"
                                       >
-                                        <FaChevronRight size={20} /> <FaChevronRight size={20} />
+                                        <FontAwesomeIcon icon={faChevronRight} />
                                       </button>
 
                                     </div>

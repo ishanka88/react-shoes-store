@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { onAuthStateChanged, User, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth, db } from './firebase/firebase'; // Import your Firebase utils
+import { auth, db } from './firebaseConfig'; // Import your Firebase utils
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 import { CartItem } from './models/CartItem';

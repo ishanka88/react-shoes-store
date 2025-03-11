@@ -13,6 +13,13 @@ import img8 from "../assets/img/icon/visa.avif";
 import { NavLink } from "react-router-dom";
 
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash,faLock } from '@fortawesome/free-solid-svg-icons';
+
+
+
+
+
 
 
 import "./shoppingCart.css";
@@ -24,7 +31,7 @@ import {  collection, getDocs, query, where, documentId } from 'firebase/firesto
 import { Product } from "../models/Products";
 
 
-import{db} from "../firebase/firebase"
+import{db} from "../firebaseConfig"
 
 // interface CartItem {
 //   id: number;
@@ -298,7 +305,9 @@ const ShoppingCart: React.FC = () => {
                                                 />
                                               </div>
                                               <div className="d-flex align-items-center ">
-                                                <FaTrash className="d-flex align-items-center delete-button " onClick={() => removeItem(item.id)} />
+                                                <FontAwesomeIcon icon={faTrash} onClick={() => removeItem(item.id)}/>
+                                                
+                                                {/* <FaTrash className="d-flex align-items-center delete-button " onClick={() => removeItem(item.id)} /> */}
                                               </div>
                                             </div>
                                           
@@ -448,7 +457,10 @@ const ShoppingCart: React.FC = () => {
                                         </div>
                                         
                                         <button className="checkout-button">
-                                          <VscWorkspaceTrusted style={{height:"14px", margin:"0px 8px 2px 0px"} } />
+                                          <FontAwesomeIcon 
+                                            icon={faLock} 
+                                            style={{height: "14px", margin: "0px 8px 2px 0px"}} 
+                                          />
                                           <span>Check out</span>
                                         </button>
                                         

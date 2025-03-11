@@ -9,7 +9,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { initializeApp } from 'firebase/app';
 import Swal from "sweetalert2";
 import { Contact } from "../models/Contactus";
-import{db} from "../firebase/firebase"
+import{db} from "../firebaseConfig"
 
 
 const classNames = require("classnames");

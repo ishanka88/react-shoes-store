@@ -11,7 +11,7 @@ import { Product } from "../models/Products";
 import { TabContent, TabPane } from 'reactstrap';
 import classNames from "classnames";
 
-import{db} from "../firebase/firebase"
+import{db} from "../firebaseConfig"
 
 
 const CustomCarousel = ({ product, currentIndex, setCurrentIndex }: { product: Product, currentIndex: number, setCurrentIndex: React.Dispatch<React.SetStateAction<number>> }) => {

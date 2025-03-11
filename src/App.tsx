@@ -31,7 +31,7 @@ import AddProducts from "./admin/products";
 import Orders from "./admin/orders";
 import ContactData from "./admin/contact";
 
-import{auth} from "./firebase/firebase"
+import{auth} from "./firebaseConfig"
 
 
 
