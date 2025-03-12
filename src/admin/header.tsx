@@ -5,16 +5,53 @@ import img1 from "../assets/img/icon/card.svg";
 import { RouteName } from "../RouteName";
 import { NavLink } from "react-router-dom";
 
-import{auth} from "../firebaseConfig"
+
+
+import { useAuth as clerkUseAuth, useUser as useUserClerk , UserButton } from "@clerk/clerk-react";
+import {  signOut as firebaseSignOut,onAuthStateChanged,User } from "firebase/auth";
+import {auth} from "../firebase/firebaseConfig"
+
+
+
+
+
 
 
 const AdminHeader: React.FC = () => {
 
+        // Destructuring the values returned from the `useAuth()` and `useUser()` hooks
+    // Cleark
+    const { isLoaded:isLodedClerk, isSignedIn: isSignedInClerk, signOut:signOutClerk } = clerkUseAuth() 
+    const { user:userClerk} = useUserClerk() 
 
-    const logout = async () => {
-        auth.signOut();
-        window.location.href = "/main";
+    // Firebase
+    const [firebaseUser, setFirebaseUser] = useState<User | null>(null); // State can be a User or null
+    const [firebaseLoading, setFirebaseLoading] = useState(true); // State to handle loading state
+
+    useEffect(() => {
+        // Set up an observer to listen for authentication state changes
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setFirebaseUser(user); // Set the user object when auth state changes
+        setFirebaseLoading(false); // Turn off loading once we have the user data
+        });
+
+        // Cleanup observer on unmount
+        return () => unsubscribe();
+    }, []);
+
+
+
+    useEffect(() => {
+    const handleSignOut = async () => {
+        if (!isSignedInClerk ) {
+        await Promise.all([
+            firebaseSignOut(auth)
+        ]);
+        }
     };
+    handleSignOut();
+    }, [isSignedInClerk, signOutClerk, auth]);
+
 
     return (
         <React.Fragment>
@@ -44,8 +81,17 @@ const AdminHeader: React.FC = () => {
                                         <div className="search">
                                             <ul className="d-flex align-items-center">
                                                 <li>
-                                                 <button type="button"
-                                                    className="delete-button" onClick={logout}>Log Out </button>
+                                                    <UserButton
+                                                    appearance={{
+                                                        elements: {
+                                                        formButtonPrimary: {
+                                                            width: '50px',
+                                                            height: '50px',
+                                                            fontSize: '24px', // Optional, increase text size inside the button
+                                                        },
+                                                        },
+                                                    }}
+                                                    />
                                                 </li>
                                             </ul>
                                         </div>

@@ -10,7 +10,7 @@ import { initializeApp } from 'firebase/app';
 import Swal from "sweetalert2";
 import { Notification, Order, OrderItem } from "../models/Order";
 
-import{db} from "../firebaseConfig"
+import{db} from "../firebase/firebaseConfig"
 
 
 const classNames = require("classnames");

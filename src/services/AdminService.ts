@@ -1,6 +1,6 @@
 import axios from "axios";
 import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { auth, db } from "../firebaseConfig";
+import { auth, db } from "../firebase/firebaseConfig";
 import { CUSTOMERS, PRODUCTS, CONTACTUS } from "../dbUtils";
 import { User } from "@firebase/auth";
 import { UserDetails } from "../models/User";

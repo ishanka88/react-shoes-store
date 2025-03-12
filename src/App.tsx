@@ -31,102 +31,182 @@ import AddProducts from "./admin/products";
 import Orders from "./admin/orders";
 import ContactData from "./admin/contact";
 
-import{auth} from "./firebaseConfig"
+
+
+import { useUser,useAuth as clerkUseAuth} from "@clerk/clerk-react";
+import { signInWithCustomToken, signOut as firebaseSignOut,onAuthStateChanged,User } from "firebase/auth";
+import {auth} from "./firebase/firebaseConfig"
+
+import { UserDetails } from './services/UserDetails';
+
 
 
 
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isModerator, setIsModerator] = useState<boolean>(false);
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>();
-  const [isAdmin, setIsAdmin] = useState<boolean>();
+  const { isLoaded:isLodedClerk, isSignedIn: isSignedInClerk, signOut:signOutClerk ,getToken} = clerkUseAuth() 
+
+  const userDetails = new UserDetails();
 
   useEffect(() => {
-    // Listen for authentication state changes
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         setIsAuthenticated(true);
-
-        AuthService.getUserFromEmail(user.email as string)
-        .then((res) => {
-              const userData: any = res
-              if (userData) {
-                  console.log(userData.role)
-                  if (userData.role === "ADMIN") {
-                      setIsAdmin(true)
-                      console.log("awa")
-                      // history.push("/dashboard");
-                  } else {
-                    setIsAdmin(false)
-                  }
-              } else {
-                setIsAdmin(false)
+        userDetails.getUserDetails()
+          .then((res) => {
+            const userData: any = res;
+            if(userData && userData.role){
+              if (userData.role === "admin") {
+                setIsAdmin(true);
+                setIsModerator(false)
+                
+              } else if (userData.role === "moderator") {
+                setIsModerator(true)
+                setIsAdmin(false);
               }
+            }else{
+              setIsAdmin(false);
+              setIsModerator(false)
+            }
           });
-        
       } else {
         setIsAuthenticated(false);
-        setIsAdmin(false)
+        setIsAdmin(false);
       }
- 
     });
-  
-    unsubscribe();  // Cleanup the listener
-  });
+
+    return () => unsubscribe(); // Cleanup the listener
+  }, [auth]);
+
+  if (!isLodedClerk) {
+    // Show loading screen while determining authentication state
+    return <div>Loading...</div>;
+  }
+
+
 
 
   return (
     <Router>
-
-
-      {isAdmin && isAuthenticated?
-        <Router>
+      {/* Check if the user is an Admin */}
+      {isAdmin && isAuthenticated ? (
+        <>
           <AdminHeader />
           <Switch>
-            <Route path={RouteName.ADD_PRODUCTS}>
-              <AddProducts />
-            </Route>
-            <Route path={RouteName.ORDERS}>
-              <Orders />
-            </Route>
-            <Route path={RouteName.CONTACT}>
-              <ContactData />
-            </Route>
+            <Route path={RouteName.ADD_PRODUCTS} component={AddProducts} />
+            <Route path={RouteName.ORDERS} component={Orders} />
+            <Route path={RouteName.CONTACT} component={ContactData} />
           </Switch>
           <AdminFooter />
-        </Router>
-        :
+        </>
+      ) : isModerator && isAuthenticated ? (
+        // Check if the user is a Moderator
         <>
-          <Header/>
-          <Route path={"/"} exact={true}>
-            <Main />
-          </Route>
-          <Route path={RouteName.MAIN} exact={true}>
-            <Main />
-          </Route>
-          <Route path={RouteName.CONTACT}>
-            <ContactUs />
-          </Route>
-          <Route path={RouteName.PRODUCTS}>
-            <Products />
-          </Route>
-          <Route path={RouteName.ABOUT}>
-            <About />
-          </Route>
-          <Route path={RouteName.ADMIN_LOGIN} >
-            <AdminLogin />
-          </Route>
-          <Route path={RouteName.PRODUCT_PAGE} >
-            <ProductPage />
-          </Route>
-          <Route path={RouteName.CART} >
-            <Cart />
-          </Route>
+          <AdminHeader />
+          <Switch>
+            <Route path={RouteName.ORDERS} component={Orders} />
+            <Route path={RouteName.CONTACT} component={ContactData} />
+          </Switch>
+          <AdminFooter />
+        </>
+      ) : (
+        // Default view for other users (non-admin, non-moderator)
+        <>
+          <Header />
+          <Switch>
+            <Route path={"/"} exact component={Main} />
+            <Route path={RouteName.MAIN} exact component={Main} />
+            <Route path={RouteName.CONTACT} component={ContactUs} />
+            <Route path={RouteName.PRODUCTS} component={Products} />
+            <Route path={RouteName.ABOUT} component={About} />
+            <Route path={RouteName.ADMIN_LOGIN} component={AdminLogin} />
+            <Route path={RouteName.PRODUCT_PAGE} component={ProductPage} />
+            <Route path={RouteName.CART} component={Cart} />
+          </Switch>
           <Footer />
         </>
-      }
-    </Router >
+      )}
+    </Router>
   );
+  
+
+  // return (
+  //   <Router>
+      
+  //     {isAdmin && isAuthenticated?
+  //       <Router>
+  //         <AdminHeader/>
+  //         <Switch>
+  //           <Route path={RouteName.ADD_PRODUCTS}>
+  //             <AddProducts />
+  //           </Route>
+  //           <Route path={RouteName.ORDERS}>
+  //             <Orders />
+  //           </Route>
+  //           <Route path={RouteName.CONTACT}>
+  //             <ContactData />
+  //           </Route>
+  //         </Switch>
+  //         <AdminFooter />
+  //       </Router>
+  //       :
+  //     {isModerator && isAuthenticated?
+  //       <Router>
+  //       <Switch>
+  //         <Route path={RouteName.ADD_PRODUCTS}>
+  //           <AddProducts />
+  //         </Route>
+  //         <Route path={RouteName.ORDERS}>
+  //           <Orders />
+  //         </Route>
+  //         <Route path={RouteName.CONTACT}>
+  //           <ContactData />
+  //         </Route>
+  //       </Switch>
+  //       <AdminFooter />
+  //     </Router>
+
+  //       :
+  //       <>
+  //         <Header/>
+  //         <Route path={"/"} exact={true}>
+  //           <Main />
+  //         </Route>
+  //         <Route path={RouteName.MAIN} exact={true}>
+  //           <Main />
+  //         </Route>
+  //         <Route path={RouteName.CONTACT}>
+  //           <ContactUs />
+  //         </Route>
+  //         <Route path={RouteName.PRODUCTS}>
+  //           <Products />
+  //         </Route>
+  //         <Route path={RouteName.ABOUT}>
+  //           <About />
+  //         </Route>
+  //         <Route path={RouteName.ADMIN_LOGIN} >
+  //           <AdminLogin />
+  //         </Route>
+  //         <Route path={RouteName.PRODUCT_PAGE} >
+  //           <ProductPage />
+  //         </Route>
+  //         <Route path={RouteName.CART} >
+  //           <Cart />
+  //         </Route>
+  //         <Footer />
+  //       </>
+
+
+
+
+  //     }
+  //     }
+  //   </Router >
+  // );
 };
 
 

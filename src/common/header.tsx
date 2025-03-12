@@ -12,6 +12,16 @@ import img9 from "../assets/img/gallery/instra2.png";
 import "./header.css";
 import './index.css'
 
+import { useAuth as clerkUseAuth, useUser as useUserClerk , SignInButton, UserButton } from "@clerk/clerk-react";
+import { signInWithCustomToken, signOut as firebaseSignOut,onAuthStateChanged,User } from "firebase/auth";
+import {auth} from "../firebase/firebaseConfig"
+import { ClipLoader } from 'react-spinners'; // Import the spinner
+
+
+
+
+
+
 const sampleCartItems: CartItem[] = [
     {
       id: "1",
@@ -67,36 +77,116 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const myRef = useRef<HTMLDivElement | null>(null); // Ref for cart items display
-
-
-
-
+  
   const [cartList, setCartList] = useState<CartItem[]>([]);
 
-  // Function to load list from localStorage
-  const loadFromLocalStorage = () => {
 
-        setCartList(sampleCartItems)
+// Destructuring the values returned from the `useAuth()` and `useUser()` hooks
+// Cleark
+  const { isLoaded:isLodedClerk, isSignedIn: isSignedInClerk, signOut:signOutClerk ,getToken} = clerkUseAuth() 
+  const { user:userClerk} = useUserClerk() 
+
+// Firebase
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null); // State can be a User or null
+  const [firebaseLoading, setFirebaseLoading] = useState(true); // State to handle loading state
+
+  useEffect(() => {
+    // Set up an observer to listen for authentication state changes
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user); // Set the user object when auth state changes
+      setFirebaseLoading(false); // Turn off loading once we have the user data
+    });
+
+    // Cleanup observer on unmount
+    return () => unsubscribe();
+  }, []);
+
+
+
+
+  useEffect(() => {
+    const syncAuthState = async () => {
+
+      if (!auth || !isLodedClerk || !firebaseLoading) return;
+
+      if (isSignedInClerk) {
+        try {
+          // Get Clerk session token
+          const token = await getToken({ template: 'integration_firebase' })
+
+          if (token !== null) {
+            try {
+              const userCredential = await signInWithCustomToken(auth, token);
+              console.log("Firebase signed in:", userCredential.user.uid);
+            } catch (err) {
+              console.error("Firebase sign-in error:", err);
+            }
+          } else {
+            console.error("Token is null. Cannot sign in.");
+          }
+        } catch (err) {
+          console.error("Firebase sign-in error:", err);
+        }
+      } else {
+        // Sign out from Firebase when Clerk session ends
+          if(firebaseUser){
+            await firebaseSignOut(auth).then(() => {
+              console.log("Firebase signed out");
+            });
+          }
+
+      }
+    };
+    syncAuthState();
+  }, [isSignedInClerk, userClerk, auth,firebaseUser]);
+
+
+
+  useEffect(() => {
+    const handleSignOut = async () => {
+      if (!isSignedInClerk ) {
+        await Promise.all([
+          firebaseSignOut(auth)
+        ]);
+      }
+    };
+    handleSignOut();
+  }, [isSignedInClerk, signOutClerk, auth]);
+
+  useEffect(()=>{
+    console.log("isSignedInClerk :", firebaseUser)
+    console.log("user :", userClerk)
+
+  },[firebaseUser,userClerk])
+
+
+
+  // Function to load list from localStorage
+  const loadCartData = () => {
+        if(!isSignedInClerk){
+          const savedList = localStorage.getItem('myCartList');
+          console.log(savedList)
+          if (savedList) {
+            setCartList(JSON.parse(savedList));
+          }
+        }
+
+        // setCartList(sampleCartItems)
     
-    //   const savedList = localStorage.getItem('mycartList');
-    //   console.log(savedList)
-    //   if (savedList) {
-    //     setCartList(JSON.parse(savedList));
-    //   }
     };
 
 
-    // Function to remove an item from the cart by its id
-  const removeFromCart = (id: string) => {
-    const updatedCart = cartList.filter(item => item.id !== id); // Filter out the item with the given id
-    setCartList(updatedCart); // Update the state with the new cart list
-    localStorage.setItem('myCartList', JSON.stringify(updatedCart)); // Update localStorage
-  };
+  //   // Function to remove an item from the cart by its id
+  // const removeFromCart = (id: string) => {
+  //   const updatedCart = cartList.filter(item => item.id !== id); // Filter out the item with the given id
+  //   setCartList(updatedCart); // Update the state with the new cart list
 
-  // Load list from localStorage when component mounts
-  useEffect(() => {
-      loadFromLocalStorage();
-    }, []);
+  //   if(!isSignedInClerk){
+  //     localStorage.setItem('myCartList', JSON.stringify(updatedCart)); // Update localStorage
+  //   }else{
+
+  //   }
+  // };
 
 
   // Refs with specific types (for DOM elements like divs or spans)
@@ -167,6 +257,8 @@ const Header: React.FC = () => {
     }
   }, [cartList]);
 
+
+
   return (
     <React.Fragment>
       <div className="content-wrapper">
@@ -211,18 +303,19 @@ const Header: React.FC = () => {
                                     </nav>
                                 </div>
 
-                                <div className="cart-sec"
-                                        style={{ padding: '0px 50px 0px 0px' }}>
+                                <div className="cart-sec remove-small "
+                                     style={{ padding: '0px 50px 0px 0px' }}>
                                     <div
                                         className="cart-parent d-flex align-items-center "
                                         onClick={() => {
-                                        const cartBox = document.querySelector(
-                                            ".cart-box"
-                                        ) as HTMLElement; // Casting as HTMLElement
+                                          loadCartData();
+                                          const cartBox = document.querySelector(
+                                              ".cart-box"
+                                          ) as HTMLElement; // Casting as HTMLElement
 
-                                        if (cartBox) {
-                                            cartBox.classList.toggle("cart-box-toggle");
-                                        }
+                                          if (cartBox) {
+                                              cartBox.classList.toggle("cart-box-toggle");
+                                          }
                                         }}
                                     >
                                         <span ref={myRef} className="cart-notification ">
@@ -242,7 +335,37 @@ const Header: React.FC = () => {
                                         </svg>
                                     </div>
                                     <div>
-                                        <img className="header-img d-flex align-items-center" src={img9} alt="img" />
+                                      {!isLodedClerk ? ( 
+                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '25px' }}>
+                                        <ClipLoader size={25} color={"#36d7b7"} loading={true} />
+                                        </div>
+                                      ):(
+                                          <nav>
+                                            <ul style={{ display: "flex", listStyleType: "none" }}>
+                                              <li style={{ marginRight: "15px" }}>
+                                                {/* Show SignInButton when the user is signed out */}
+                                                {isSignedInClerk ? (
+                                                  <div>
+                                                    <UserButton
+                                                      appearance={{
+                                                        elements: {
+                                                          formButtonPrimary: {
+                                                            width: '50px',
+                                                            height: '50px',
+                                                            fontSize: '24px', // Optional, increase text size inside the button
+                                                          },
+                                                        },
+                                                      }}
+                                                    />
+                                                  </div>
+                                                ) : (
+                                                  <SignInButton>Sign In</SignInButton>
+                                                )}
+                                              </li>
+                                            </ul>
+                                          </nav>
+                                      )}
+                                        {/* <img className="header-img d-flex align-items-center" src={img9} alt="img" /> */}
                                     </div>
                                 </div>
 
@@ -269,31 +392,102 @@ const Header: React.FC = () => {
                                     {/* Mobile Menu Overlay */}
 
                                     <div  className={`mobile-menu d-block d-lg-none ${isMenuOpen ? "open" : ""}`}> 
+                                        
+          
                                         <div>
+                                            <div>
+                                                <div className="cart-sec d-flex justify-element-between w-100"
+                                                      style={{ padding: '0px 50px 0px 0px' }}>
+                                                      <div
+                                                          className="cart-parent d-flex align-items-center "
+                                                          onClick={() => {
+
+                                                          loadCartData();
+                                                          const cartBox = document.querySelector(
+                                                              ".cart-box"
+                                                          ) as HTMLElement; // Casting as HTMLElement
+
+                                                          if (cartBox) {
+                                                              cartBox.classList.toggle("cart-box-toggle");
+                                                          }
+                                                          }}
+                                                      >
+                                                          <span ref={myRef} className="cart-notification ">
+                                                          {cartList.length}
+                                                          </span>
+                                                          <svg
+                                                          className="cart"
+                                                          width="25"
+                                                          height="25"
+                                                          xmlns="http://www.w3.org/2000/svg"
+                                                          >
+                                                          <path
+                                                              d="M20.925 3.641H3.863L3.61.816A.896.896 0 0 0 2.717 0H.897a.896.896 0 1 0 0 1.792h1l1.031 11.483c.073.828.52 1.726 1.291 2.336C2.83 17.385 4.099 20 6.359 20c1.875 0 3.197-1.87 2.554-3.642h4.905c-.642 1.77.677 3.642 2.555 3.642a2.72 2.72 0 0 0 2.717-2.717 2.72 2.72 0 0 0-2.717-2.717H6.365c-.681 0-1.274-.41-1.53-1.009l14.321-.842a.896.896 0 0 0 .817-.677l1.821-7.283a.897.897 0 0 0-.87-1.114ZM6.358 18.208a.926.926 0 0 1 0-1.85.926.926 0 0 1 0 1.85Zm10.015 0a.926.926 0 0 1 0-1.85.926.926 0 0 1 0 1.85Zm2.021-7.243-13.8.81-.57-6.341h15.753l-1.383 5.53Z"
+                                                              fill="#69707D"
+                                                              fillRule="nonzero"
+                                                          />
+                                                          </svg>
+                                                      </div>
+                                                      <div>
+                                                        {!isLodedClerk ? ( 
+                                                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '25px' }}>
+                                                          <ClipLoader size={25} color={"#36d7b7"} loading={true} />
+                                                          </div>
+                                                        ):(
+                                                            <nav>
+                                                              <ul style={{ display: "flex", listStyleType: "none" }}>
+                                                                <li style={{ marginRight: "15px" }}>
+                                                                  {/* Show SignInButton when the user is signed out */}
+                                                                  {isSignedInClerk ? (
+                                                                    <div>
+                                                                      <UserButton
+                                                                        appearance={{
+                                                                          elements: {
+                                                                            formButtonPrimary: {
+                                                                              width: '50px',
+                                                                              height: '50px',
+                                                                              fontSize: '24px', // Optional, increase text size inside the button
+                                                                            },
+                                                                          },
+                                                                        }}
+                                                                      />
+                                                                    </div>
+                                                              ) : (
+                                                                    <SignInButton >Sign In</SignInButton>
+                                                                  )}
+                                                                </li>
+                                                              </ul>
+                                                            </nav>
+                                                        )}
+                                                          {/* <img className="header-img d-flex align-items-center" src={img9} alt="img" /> */}
+                                                      </div>
+                                                  </div>
+                                            </div>
+                                          
                                             <nav>
-                                            <ul>
-                                                <li>
-                                                <NavLink to={RouteName.MAIN} onClick={() => setIsMenuOpen(false)}>
-                                                    Home
-                                                </NavLink>
-                                                </li>
-                                                <li>
-                                                <NavLink to={RouteName.PRODUCTS} onClick={() => setIsMenuOpen(false)}>
-                                                    Products
-                                                </NavLink>
-                                                </li>
-                                                <li>
-                                                <NavLink to={RouteName.ABOUT} onClick={() => setIsMenuOpen(false)}>
-                                                    About
-                                                </NavLink>
-                                                </li>
-                                                <li>
-                                                <NavLink to={RouteName.CONTACT} onClick={() => setIsMenuOpen(false)}>
-                                                    Contact
-                                                </NavLink>
-                                                </li>
-                                            </ul>
-                                            </nav>
+                                              <ul>
+                                                  <li>
+                                                  <NavLink to={RouteName.MAIN} onClick={() => setIsMenuOpen(false)}>
+                                                      Home
+                                                  </NavLink>
+                                                  </li>
+                                                  <li>
+                                                  <NavLink to={RouteName.PRODUCTS} onClick={() => setIsMenuOpen(false)}>
+                                                      Products
+                                                  </NavLink>
+                                                  </li>
+                                                  <li>
+                                                  <NavLink to={RouteName.ABOUT} onClick={() => setIsMenuOpen(false)}>
+                                                      About
+                                                  </NavLink>
+                                                  </li>
+                                                  <li>
+                                                  <NavLink to={RouteName.CONTACT} onClick={() => setIsMenuOpen(false)}>
+                                                      Contact
+                                                  </NavLink>
+                                                  </li>
+                                                </ul>
+                                              </nav>
                                         </div>
                                     </div>
                                 </div>
@@ -345,29 +539,7 @@ const Header: React.FC = () => {
                                         {"Rs. "}{item.price} x {item.quantity}{" = "}
                                         <span className="item-amount" >  Rs. {(item.price && item.quantity ? item.price * item.quantity : 0).toFixed(2)}</span>
                                     </div>
-                                </div>
-                                <div className="cart-item-col3">
-                                    <svg
-                                    className="cart-del"
-                                    onClick={() => {
-                                        // Function to handle item removal, can call removeFromCart function here
-                                        removeFromCart(item.id);
-                                    }}
-                                    width="14"
-                                    height="16"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    xmlnsXlink="http://www.w3.org/1999/xlink"
-                                    >
-                                    <defs>
-                                        <path
-                                        d="M0 2.625V1.75C0 1.334.334 1 .75 1h3.5l.294-.584A.741.741 0 0 1 5.213 0h3.571a.75.75 0 0 1 .672.416L9.75 1h3.5c.416 0 .75.334.75.75v.875a.376.376 0 0 1-.375.375H.375A.376.376 0 0 1 0 2.625Zm13 1.75V14.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 1 14.5V4.375C1 4.169 1.169 4 1.375 4h11.25c.206 0 .375.169.375.375ZM4.5 6.5c0-.275-.225-.5-.5-.5s-.5.225-.5.5v7c0 .275.225.5.5.5s.5-.225.5-.5v-7Zm3 0c0-.275-.225-.5-.5-.5s-.5.225-.5.5v7c0 .275.225.5.5.5s.5-.225.5-.5v-7Zm3 0c0-.275-.225-.5-.5-.5s-.5.225-.5.5v7c0 .275.225.5.5.5s.5-.225.5-.5v-7Z"
-                                        id="a"
-                                        />
-                                    </defs>
-                                    <use fill="#C3CAD9" fillRule="nonzero" xlinkHref="#a" />
-                                    </svg>
-                                </div>
-                                
+                                </div>                          
                             </div>
                         ))}
 

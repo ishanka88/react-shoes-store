@@ -32,8 +32,8 @@
     right: 0;
 }
 
-.mobile-menu nav {
-    padding: 80px 20px 20px;
+.mobile-menu div:first-child {
+    padding: 35px 20px 20px;
 }
 
 .mobile-menu ul {
@@ -76,3 +76,17 @@
         display: none;
     }
 }
+
+
+
+/* Custom class to remove elements on small screens */
+.remove-small {
+    display: block; /* Make sure the element is visible by default */
+  }
+  
+  /* Remove on small screens and below */
+  @media (max-width: 768px) {
+    .remove-small {
+      display: none !important; /* Completely remove the element on small screens */
+    }
+  }
