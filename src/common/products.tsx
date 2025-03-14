@@ -5,13 +5,14 @@ import img3 from "../assets/img/icon/services3.svg";
 import img4 from "../assets/img/icon/services4.svg";
 import { Carousel } from 'react-bootstrap';
 
-import { collection, getDocs, query,orderBy } from 'firebase/firestore';
 
 import { Product } from "../models/Products";
 import { TabContent, TabPane } from 'reactstrap';
 import classNames from "classnames";
 
-import{db} from "../firebase/firebaseConfig"
+
+
+import { useProductData } from '../context/DataContext';
 
 
 const CustomCarousel = ({ product, currentIndex, setCurrentIndex }: { product: Product, currentIndex: number, setCurrentIndex: React.Dispatch<React.SetStateAction<number>> }) => {
@@ -142,14 +143,10 @@ const SizesComponent: React.FC<{ product: Product }> = ({ product }) => {
 
 
 const Products: React.FC = () => {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
+    const { productsList , loading } = useProductData();
+
     const [verticalActiveTabWithIcon, setVerticalActiveTabWithIcon] = useState("1");
     const [currentIndexes, setCurrentIndexes] = useState<number[]>([]); // Store indexes for each product carousel
-  
-    useEffect(() => {
-      fetchProducts();
-    }, [verticalActiveTabWithIcon]);
   
     const toggleVerticalIcon = (tab: any) => {
       if (verticalActiveTabWithIcon !== tab) {
@@ -157,32 +154,7 @@ const Products: React.FC = () => {
       }
     };
   
-    const fetchProducts = async () => {
-      try {
-        let category = verticalActiveTabWithIcon === "1" ? 'shoes' : '';
-  
-        // const shoesProductsQuery = query(collection(db, 'Products'), where('category', '==', category));
-        const shoesProductsQuery = query(collection(db, 'Products'),orderBy('displayOrder'));
-        const fetchedProducts: Product[] = [];
-        const shoesProductsSnapshot = await getDocs(shoesProductsQuery);
-  
-        for (const doc of shoesProductsSnapshot.docs) {
-            const productData = doc.data();
-            
-            // Ensure `mainImages` exists or fall back to an empty array
-            const mainImages: string[] = productData.mainImages || []; 
-          
-            // Push the product data into `fetchedProducts` array
-            fetchedProducts.push({ id: doc.id, ...productData, mainImages });
-          }
-          
-        setLoading(false);
-        setProducts(fetchedProducts);
-        setCurrentIndexes(new Array(fetchedProducts.length).fill(0)); // Initialize the indexes for each carousel
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      }
-    };
+
   
     const handleIndexChange = (index: number, newIndex: number | ((prevIndex: number) => number)) => {
       setCurrentIndexes((prevIndexes) => {
@@ -250,9 +222,9 @@ const Products: React.FC = () => {
                   <TabContent activeTab={verticalActiveTabWithIcon} className="text-muted mt-4 mt-xl-0 w-100">
                     <TabPane tabId="1">
                       <div className="row">
-                        {products.length > 0 ? (
+                        {productsList.length > 0 ? (
                           <>
-                            {products.map((product, index) => (
+                            {productsList.map((product, index) => (
                               <div className="col-lg-4 col-md-6 col-sm-6" key={product.id}>
                                 <div
                                   className="single-new-arrival mb-50 text-center"

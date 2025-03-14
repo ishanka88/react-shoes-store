@@ -26,7 +26,6 @@ import { RouteName } from "./RouteName";
 import { AuthService } from "./services/AuthService";
 import AdminFooter from "./admin/footer";
 import AdminHeader from "./admin/header";
-import AdminLogin from "./common/adminLogin";
 import AddProducts from "./admin/products";
 import Orders from "./admin/orders";
 import ContactData from "./admin/contact";
@@ -38,7 +37,7 @@ import { signInWithCustomToken, signOut as firebaseSignOut,onAuthStateChanged,Us
 import {auth} from "./firebase/firebaseConfig"
 
 import { UserDetails } from './services/UserDetails';
-
+import { DataProvider } from './context/DataContext';
 
 
 
@@ -56,7 +55,7 @@ const App: React.FC = () => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user) {
         setIsAuthenticated(true);
-        userDetails.getUserDetails()
+        UserDetails.getUserDetails()
           .then((res) => {
             const userData: any = res;
             if(userData && userData.role){
@@ -92,44 +91,45 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      {/* Check if the user is an Admin */}
-      {isAdmin && isAuthenticated ? (
-        <>
-          <AdminHeader />
-          <Switch>
-            <Route path={RouteName.ADD_PRODUCTS} component={AddProducts} />
-            <Route path={RouteName.ORDERS} component={Orders} />
-            <Route path={RouteName.CONTACT} component={ContactData} />
-          </Switch>
-          <AdminFooter />
-        </>
-      ) : isModerator && isAuthenticated ? (
-        // Check if the user is a Moderator
-        <>
-          <AdminHeader />
-          <Switch>
-            <Route path={RouteName.ORDERS} component={Orders} />
-            <Route path={RouteName.CONTACT} component={ContactData} />
-          </Switch>
-          <AdminFooter />
-        </>
-      ) : (
-        // Default view for other users (non-admin, non-moderator)
-        <>
-          <Header />
-          <Switch>
-            <Route path={"/"} exact component={Main} />
-            <Route path={RouteName.MAIN} exact component={Main} />
-            <Route path={RouteName.CONTACT} component={ContactUs} />
-            <Route path={RouteName.PRODUCTS} component={Products} />
-            <Route path={RouteName.ABOUT} component={About} />
-            <Route path={RouteName.ADMIN_LOGIN} component={AdminLogin} />
-            <Route path={RouteName.PRODUCT_PAGE} component={ProductPage} />
-            <Route path={RouteName.CART} component={Cart} />
-          </Switch>
-          <Footer />
-        </>
-      )}
+       <DataProvider>
+          {/* Check if the user is an Admin */}
+          {isAdmin && isAuthenticated ? (
+            <>
+              <AdminHeader />
+              <Switch>
+                <Route path={RouteName.ADD_PRODUCTS} component={AddProducts} />
+                <Route path={RouteName.ORDERS} component={Orders} />
+                <Route path={RouteName.CONTACT} component={ContactData} />
+              </Switch>
+              <AdminFooter />
+            </>
+          ) : isModerator && isAuthenticated ? (
+            // Check if the user is a Moderator
+            <>
+              <AdminHeader />
+              <Switch>
+                <Route path={RouteName.ORDERS} component={Orders} />
+                <Route path={RouteName.CONTACT} component={ContactData} />
+              </Switch>
+              <AdminFooter />
+            </>
+          ) : (
+            // Default view for other users (non-admin, non-moderator)
+            <>
+              <Header />
+              <Switch>
+                <Route path={"/"} exact component={Main} />
+                <Route path={RouteName.MAIN} exact component={Main} />
+                <Route path={RouteName.CONTACT} component={ContactUs} />
+                <Route path={RouteName.PRODUCTS} component={Products} />
+                <Route path={RouteName.ABOUT} component={About} />
+                <Route path={RouteName.PRODUCT_PAGE} component={ProductPage} />
+                <Route path={RouteName.CART} component={Cart} />
+              </Switch>
+              <Footer />
+            </>
+          )}
+       </DataProvider>
     </Router>
   );
   

@@ -6,6 +6,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { Container, Row, Col } from "reactstrap";
 
 import { CartItem } from "../models/CartItem";
+import { Product} from "../models/Products";
 
 import img9 from "../assets/img/gallery/instra2.png";
 
@@ -17,68 +18,34 @@ import { signInWithCustomToken, signOut as firebaseSignOut,onAuthStateChanged,Us
 import {auth} from "../firebase/firebaseConfig"
 import { ClipLoader } from 'react-spinners'; // Import the spinner
 
+import { UserDetails } from "../services/UserDetails";
+import { UserCartDetails } from "../services/UserCartDetails";
+
+import { useProductData } from '../context/DataContext';
 
 
 
+interface DisplayCartItem {
+  id?: any;
+  title?: string;
+  mainImage?: any;
+  category?: string;
+  itemCode?: string;
+  price?: number;
+  discount?: number; // Change float to number
+  sizes?: { [size: number]: number }; // Store sizes with their stock
+  quantity?: number
+}
 
-
-const sampleCartItems: CartItem[] = [
-    {
-      id: "1",
-      title: "Fall Limited Edition Sneakers",
-      mainImage: "https://tacco.s3.amazonaws.com/taccoImages/WhatsApp%20Image%202025-02-12%20at%209.58.40%20AM.jpeg",
-      category: "Footwear",
-      itemCode: "FL-12345",
-      price: 6500.00,
-      discount: 20, // Discount in percentage
-      sizes: {
-        38: 5, // Size 38 with 5 units in stock
-        39: 3, // Size 39 with 3 units in stock
-        40: 7, // Size 40 with 7 units in stock
-      },
-      quantity: 1, // How many units of this item in the cart
-    },
-    {
-      id: "2",
-      title: "Blue Casual T-Shirt",
-      mainImage: "https://tacco.s3.amazonaws.com/taccoImages/WhatsApp%20Image%202025-02-12%20at%209.58.40%20AM.jpeg",
-      category: "Clothing",
-      itemCode: "BC-98765",
-      price: 2500.00,
-      discount: 10,
-      sizes: {
-        "39": 10, // Size S with 10 units in stock
-        "40": 8,  // Size M with 8 units in stock
-        "41": 4,  // Size L with 4 units in stock
-      },
-      quantity: 2,
-    },
-    {
-      id: "3",
-      title: "Classic Denim Jeans",
-      mainImage: "https://tacco.s3.amazonaws.com/taccoImages/WhatsApp%20Image%202025-02-12%20at%209.58.40%20AM.jpeg",
-      category: "Clothing",
-      itemCode: "CD-67890",
-      price: 4000.00,
-      discount: 15,
-      sizes: {
-        30: 12, // Size 30 with 12 units in stock
-        32: 9,  // Size 32 with 9 units in stock
-        34: 6,  // Size 34 with 6 units in stock
-      },
-      quantity: 1,
-    }
-      
-    ]
-  
-  
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
   const myRef = useRef<HTMLDivElement | null>(null); // Ref for cart items display
   
-  const [cartList, setCartList] = useState<CartItem[]>([]);
+  const [cartList, setCartList] = useState<DisplayCartItem[]>([]);
+
+  const { productsList , loading } = useProductData();
 
 
 // Destructuring the values returned from the `useAuth()` and `useUser()` hooks
@@ -102,8 +69,6 @@ const Header: React.FC = () => {
   }, []);
 
 
-
-
   useEffect(() => {
     const syncAuthState = async () => {
 
@@ -117,7 +82,10 @@ const Header: React.FC = () => {
           if (token !== null) {
             try {
               const userCredential = await signInWithCustomToken(auth, token);
-              console.log("Firebase signed in:", userCredential.user.uid);
+              if (userCredential){
+                console.log("Firebase signed in:", userCredential.user.uid);
+             
+              }
             } catch (err) {
               console.error("Firebase sign-in error:", err);
             }
@@ -137,6 +105,7 @@ const Header: React.FC = () => {
 
       }
     };
+
     syncAuthState();
   }, [isSignedInClerk, userClerk, auth,firebaseUser]);
 
@@ -153,27 +122,59 @@ const Header: React.FC = () => {
     handleSignOut();
   }, [isSignedInClerk, signOutClerk, auth]);
 
-  useEffect(()=>{
-    console.log("isSignedInClerk :", firebaseUser)
-    console.log("user :", userClerk)
-
-  },[firebaseUser,userClerk])
 
 
 
-  // Function to load list from localStorage
-  const loadCartData = () => {
-        if(!isSignedInClerk){
-          const savedList = localStorage.getItem('myCartList');
-          console.log(savedList)
-          if (savedList) {
-            setCartList(JSON.parse(savedList));
-          }
-        }
-
-        // setCartList(sampleCartItems)
+// Function to load list from localStorage
+const loadCartData = async () => {
+  try {
+    // Assuming `UserCartDetails.getUserCartDetails()` retrieves data, possibly from localStorage or an API.
+    const cartList:CartItem[] = await UserCartDetails.getUserCartDetails();
     
-    };
+    if (cartList) {
+      const displayCartList: DisplayCartItem[] = [];
+      
+      // Iterate over cart items and create the display cart items
+      for (const item of cartList) {
+        if (item.id){
+          const product = findProductById(item.id);
+          // Handle case when product is not found
+          if (product) {
+            const cartItem: DisplayCartItem = {
+              id: product.id,
+              title: product.name,
+              mainImage: product.mainImages[0], // Assuming the main image is at index 0
+              category: product.category,
+              itemCode: product.itemCode,
+              price: product.price,
+              discount: product.discount, // Discount in percentage
+              sizes: item.sizes,
+              quantity: item.quantity, // How many units of this item in the cart
+            };
+  
+            // Push the constructed cartItem into the displayCartList
+            displayCartList.push(cartItem);
+          }
+        } else {
+          console.warn(`Product with id ${item.id} not found.`);
+        }
+      }
+
+      // Set the cart data to state
+      setCartList(displayCartList);
+    }
+  } catch (error) {
+    console.error('Error loading cart data:', error);
+  }
+};
+
+// Function to find a product by its ID
+const findProductById = (id: string): Product | undefined => {
+  // Find the product in the product list by ID
+  const product = productsList.find((product) => product.id === id);
+  return product; // This can be undefined if not found
+};
+
 
 
   //   // Function to remove an item from the cart by its id
@@ -256,6 +257,12 @@ const Header: React.FC = () => {
       }
     }
   }, [cartList]);
+
+  useEffect(() => {
+    if(!loading){
+      loadCartData()
+    }
+  }, [loading]);
 
 
 
@@ -525,7 +532,7 @@ const Header: React.FC = () => {
                 </p>
                 <div ref={myRef1} className="cart-item-div">
                     <div className="w-100">
-                        {cartList.map((item: CartItem, index: number) => (
+                        {cartList.map((item: DisplayCartItem, index: number) => (
                             <div key={item.id} className="d-flex justify-content-between align-items-center w-100" style={{padding:"10px 3px 0px 3px"}}> {/* Add key to each item for efficient re-renders */}
                                 <div className="d-flex" style={{padding:"0px 10px 0px 0px"}} >{index + 1}</div>
                                 <div className="cart-item-col1">

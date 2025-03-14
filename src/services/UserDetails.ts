@@ -1,38 +1,56 @@
 import { getAuth, IdTokenResult, User } from "firebase/auth";
+import { AuthService } from "./AuthService";
+import {Customer} from "../models/Customer"
 
 // Get the auth instance
 const auth = getAuth();
 
 export class UserDetails {
   // Method to retrieve the user's role and other details and return them
-  async getUserDetails() {
+  public static async getUserDetails() {
     try {
       const user = auth.currentUser;
+      var customerDetails=null;
 
- 
 
       if (user) {
         // Get the ID token result, which includes user claims (like role)
         const idTokenResult: IdTokenResult = await user.getIdTokenResult();
-
-    
-        
         // Get the user's role from the claims
         const role: string | undefined = idTokenResult.claims.role as string;
-
-        console.log("awa")
-        console.log(role)
-        console.log("awa")
 
         // Access other user details
         const email: string | null = user.email;
         const uid: string = user.uid;
+
+        // Check if the user already has a customer document
+        const userDocData = await AuthService.getUserFromUid(uid)
+
+        if (!userDocData) {
+          // If no document exists, create a new document in the 'customers' collection
+          const newCustomerData: Customer = {
+            _id: user.uid,
+            name: user.displayName || 'New User', // You can modify this based on user data
+            address: '',
+            city: '',
+            tel1: '',
+            tel2: '',
+            cart: [] // Assuming no cart initially
+          };
+
+          customerDetails = AuthService.addNewCustomer(newCustomerData,user.uid)
+          console.log('New customer document created!');
+        }else{
+          customerDetails= userDocData
+        }
 
         // Return the user details as an object
         return {
           role,
           email,
           uid,
+          customerDetails
+
         };
       } else {
         console.log("No user is signed in.");
