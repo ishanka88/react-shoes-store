@@ -705,7 +705,7 @@ const ProductPage: React.FC = () => {
                                                             const max  = product.sizes?.[childData?.[1]]|| 0;
                                                             if (items >= max) {
                                                               count = max
-                                                              alert("Reached maximum stock")
+                                                              alert("Maximum available quantity reached")
                                                             }else{
                                                               count +=1
                                                             }

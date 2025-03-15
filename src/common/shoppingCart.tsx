@@ -12,26 +12,20 @@ import img7 from "../assets/img/icon/master.avif";
 import img8 from "../assets/img/icon/visa.avif";
 import { NavLink } from "react-router-dom";
 
-
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash,faLock } from '@fortawesome/free-solid-svg-icons';
-
-
-
-
-
-
 
 import "./shoppingCart.css";
 import './index.css'
 
-
-
 import {  collection, getDocs, query, where, documentId } from 'firebase/firestore';
 import { Product } from "../models/Products";
 
-
 import{db} from "../firebase/firebaseConfig"
+
+import { UserCartDetails } from "../services/UserCartDetails";
+import {useProductData} from "../context/DataContext"
+import { CartItem } from "../models/CartItem";
 
 // interface CartItem {
 //   id: number;
@@ -44,7 +38,7 @@ import{db} from "../firebase/firebaseConfig"
 //   selected: boolean;
 // }
 
-interface CartItem {
+interface ModifiedCartItem {
   id: number;
   productId:string;
   name: string;
@@ -58,71 +52,103 @@ interface CartItem {
   selected: boolean;
 }
 
-const initialCartList: CartItem[] = [
-  {
-    id: 1,
-    productId:"8J6UEJRN1euEpjs1M1nN",
-    name: "Nike Air Max Sneakers",
-    itemCode:"C010",
-    mainImage: "",
-    selectedSizes: { 39:2,40: 1, 41: 0, 42: 2, 43: 0, 44: 1, 45: 0 },
-    availableSizes:{},
-    quantity: 4,
-    price: 6500.00,
-    discount:20,
-    selected: false,
-  },
-  {
-    id: 2,
-    productId:"DzdvNXzIWVvrqTjAZiMc",
-    name: "Adidas Running Shoes",
-    itemCode:"c010",
-    mainImage: "",
-    selectedSizes: { 39:2,40: 0, 41: 1, 42: 1, 43: 0, 44: 2, 45: 0 },
-    availableSizes:{},
-    quantity: 4,
-    price: 6000.00,
-    discount:20,
-    selected: false,
-  },
-];
 
 const ShoppingCart: React.FC = () => {
+  const { productsList , loading } = useProductData();
+  
   const [verticalActiveTabWithIcon, setVerticalActiveTabWithIcon] = useState("1");
-  const [productsList, setProductsList] = useState<Product[]>([]); // Initialize state
+  const [availableCartProductsList, setAvailableCartProductsList] = useState<Product[]>([]); // Initialize state
 
 
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartListFromDatabase, setCartListFromDatabase] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<ModifiedCartItem[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
+  const [saveButton, setSaveButton] = useState(true);
 
-  // Load cart from localStorage on component mount
   useEffect(() => {
-    const savedCart = localStorage.getItem("cart");
-    if (savedCart) {
+    const loadCartData = async () => {
       try {
-        const parsedCart = JSON.parse(savedCart);
-        if (Array.isArray(parsedCart)) {
-            if (parsedCart.length ===0 ){
-              setCart(initialCartList);
-            }else{
-              setCart(parsedCart);
+        const originalCart = await UserCartDetails.getUserCartDetails();
+        if (Array.isArray(originalCart) && originalCart.length > 0) {
+          // Set the cart data from database
+          setCartListFromDatabase(originalCart);
+
+          const modifiedCartItemList: ModifiedCartItem[] = [];
+          let isStockMismatchDetected = false; // Flag to track any stock mismatch
+
+          originalCart.forEach((item, index) => {
+            if (item.id) {
+              const product = findProductById(item.id);
+
+              if (product && product.sizes) {
+                const updatedSelectedSizesArray = Object.keys(product.sizes).reduce((acc, size) => {
+                  const parsedSize = parseInt(size);
+                  const itemQuantity = item.sizes?.[parsedSize] ?? 0;
+                  const availableStock = product.sizes ? product.sizes[parsedSize] : 0; 
+
+                  // If item quantity exceeds available stock, update to available stock
+                  if (itemQuantity > availableStock) {
+                    acc[parsedSize] = availableStock;
+                    if (!isStockMismatchDetected) {
+                      isStockMismatchDetected = true;
+                    }
+                  } else {
+                    acc[parsedSize] = itemQuantity;
+                  }
+
+                  return acc;
+                }, {} as { [size: number]: number });
+
+                const totalQuantity = isStockMismatchDetected
+                  ? Object.values(updatedSelectedSizesArray).reduce((sum, qty) => sum + qty, 0)
+                  : item.quantity || 0;
+
+                const modifiedCartItem: ModifiedCartItem = {
+                  id: index + 1, // Use index+1 for unique item IDs (starting from 1)
+                  productId: item.id,
+                  name: product.name || "",
+                  itemCode: item.itemCode || "",
+                  mainImage: product.mainImages[0],
+                  selectedSizes: updatedSelectedSizesArray,
+                  availableSizes: product.sizes,
+                  quantity: totalQuantity,
+                  price: product.price || 0,
+                  discount: product.discount || 0,
+                  selected: false,
+                };
+
+                modifiedCartItemList.push(modifiedCartItem);
+              }
+            } else {
+              console.warn(`Product with id ${item.id} not found.`);
             }
-          
+          });
+
+          if (isStockMismatchDetected) {
+            alert('Some selected sizes are out of stock. Your cart has been updated with the available sizes.');
+          }
+
+          setCart(modifiedCartItemList);
         } else {
-          console.warn("Invalid cart format in localStorage");
+          console.warn("Invalid cart format or empty cart");
         }
       } catch (error) {
         console.error("Error parsing cart data:", error);
       }
-    }
-  }, []);
+    };
 
-  // Save cart to localStorage whenever it updates
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
-  }, [cart]);
+    loadCartData(); // Call the async function
+  }, [loading]);
+  
 
+
+  // Function to find a product by its ID
+  const findProductById = (id: string): Product | undefined => {
+    // Find the product in the product list by ID
+    const product = productsList.find((product) => product.id === id);
+    return product; // This can be undefined if not found
+  };
   
 
   // fetch data
@@ -154,7 +180,7 @@ const ShoppingCart: React.FC = () => {
       }
     }
   
-    setProductsList(allProducts);
+    setAvailableCartProductsList(allProducts);
 
   }, []); // ✅ Empty array prevents unnecessary re-creation
 
@@ -162,7 +188,7 @@ const ShoppingCart: React.FC = () => {
   const updateCartList = () => {
     setCart(prevCart =>
       prevCart.map(cartItem => {
-        const product = productsList.find(p => p.id === cartItem.productId);
+        const product = availableCartProductsList.find(p => p.id === cartItem.productId);
 
         if (product) {
           return {
@@ -186,11 +212,11 @@ const ShoppingCart: React.FC = () => {
   }, []); // ✅ Corrected dependency array
   
   useEffect(() => {
-    if (productsList.length > 0) {
+    if (availableCartProductsList.length > 0) {
         updateCartList();
     }
    
-  }, [productsList]); // ✅ Corrected dependency array
+  }, [availableCartProductsList]); // ✅ Corrected dependency array
   
 
 
@@ -207,8 +233,19 @@ const ShoppingCart: React.FC = () => {
   };
 
   const updateQuantity = (id: number, size: number, amount: number) => {
+    setSaveButton(false)
     setCart(cart.map(item => {
       if (item.id === id) {
+        if ((item.selectedSizes?.[size] === item.availableSizes?.[size])&& amount>0){
+
+          if(item.selectedSizes?.[size]===0){
+            alert("Out of stock")
+          }else{
+            alert("Maximum available quantity reached")
+          }
+            return item;
+
+        }
         const updatedSizes = {
           ...item.selectedSizes,
           [size]: Math.max(0, (item.selectedSizes[size] || 0) + amount), // Prevent negative values
@@ -243,8 +280,69 @@ const ShoppingCart: React.FC = () => {
   };
 
   const subtotal = cart.filter(item => item.selected).reduce((acc, item) =>
-    acc + item.price * Object.values(item.selectedSizes).reduce((sum, qty) => sum + qty, 0), 0
+    acc + (item.price * ((100 - Number(item.discount)) / 100))* Object.values(item.selectedSizes).reduce((sum, qty) => sum + qty, 0), 0
   );
+
+  
+
+  // Helper function to update the cart list with the updated sizes and quantities
+  const updateCartWithNewSizes = (cartListFromDatabase: any[], cart: any[]) => {
+    return cartListFromDatabase.map((item1) => {
+      // Find the matching item in the cart array
+      const matchingItem = cart.find((item2) => item1.id === item2.productId);
+
+      // If a match is found, update the sizes and quantities
+      if (matchingItem) {
+        return {
+          ...item1, // Keep the other properties of item1
+          sizes: matchingItem.selectedSizes, // Update sizes with the corresponding sizes from cart
+          quantity: matchingItem.quantity, // Update quantity
+        };
+      }
+      return item1; // Return the original item if no match is found
+    });
+  };
+
+  // Function to handle the save cart process
+  const saveCart = ()=>{
+      const save = async () => {
+
+        // Step 1: Confirm the action before proceeding
+        const isConfirmed = window.confirm("Are you sure you want to save the cart?");
+        if (!isConfirmed) return; // If not confirmed, exit early
+
+        // Step 2: Update the cart list with the new sizes and quantities
+        const updatedCartList = updateCartWithNewSizes(cartListFromDatabase, cart);
+
+        // Step 3: Try to save the updated cart list
+        try {
+          const response = await UserCartDetails.addUserCartDetails(updatedCartList);
+
+          // Step 4: Handle success or failure
+          if (response) {
+            alert("Cart successfully saved!");
+          } else {
+            alert("Error saving the cart. Please try again.");
+          }
+        } catch (error) {
+          // Step 5: Catch any errors and log them
+          console.error("Error saving cart:", error);
+          alert("An error occurred while saving the cart. Please try again.");
+        }
+
+      }
+      save()
+  };
+
+  const getItemPriceWithDiscount = (item: ModifiedCartItem): number => {
+    // Check if price and discount are available and valid
+    if (item?.price && item?.discount !== undefined) {
+      const discountedPrice = Number(item.price) * ((100 - Number(item.discount)) / 100);
+      return discountedPrice
+    } 
+    return 0; // Return "N/A" if price or discount is not available
+  };
+  
 
 
 
@@ -279,14 +377,21 @@ const ShoppingCart: React.FC = () => {
                             <h2>SHOPPING CART</h2>
                             <Row className="d-flex justify-content-between">
                               <Col xl={7} lg={8} md={12} sm={12}  xs={12}>
-                                  <div className="d-flex align-items-center mb-0 black-line ">
-                                    <Input
-                                      type="checkbox"
-                                      checked={selectAll}
-                                      onChange={toggleSelectAll}
-                                      className="me-2"
-                                    />
-                                    <span style={{padding:"0px 10px 0px 10px"}}> Select all variations ({cart.length})</span>
+                                  <div className="d-flex align-items-center justify-content-between mb-0 black-line ">
+                                    <div>
+                                        <Input
+                                          type="checkbox"
+                                          checked={selectAll}
+                                          onChange={toggleSelectAll}
+                                          className="me-2"
+                                        />
+                                        <span style={{padding:"0px 10px 0px 10px"}}> Select all ({cart.length})</span>
+                                    </div>
+
+                                    <div>
+                                      <button className ={saveButton? `save-cart-btn disabled `:` save-cart-btn `}  onClick={() => saveCart()}>Save Changes</button>
+                                    </div>
+
                                     
                                   </div>
 
@@ -326,45 +431,87 @@ const ShoppingCart: React.FC = () => {
                                                 <Col xl={8} lg={8} md={8}>
 
                                                   <div className="">
-                                                    <div className="d-flex justify-content-start ">
-                                                      <h4 style={{margin: "0px 0px 0px 0px" }}>{item.name}</h4>
-                                                    </div>
-                                                    <div className="d-flex justify-content-start ">
-                                                        <p style={{margin: "0px 0px 15px 0px", fontSize:"12px"}}>CODE : {item.itemCode}</p>
-                                                    </div>
-                                      
-                                                    <div className="d-flex justify-content-start ">
-                                                      <p>Rs. {(item.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / Pair</p>
-                                                    </div>
-                                                    <div className="d-flex justify-content-between">
-                                                      <p style={{margin:"0px"}}>Quantity : {item.quantity}</p>
-                                                      <p style={{ margin: "0px" }}>
-                                                        Rs {(item.price * item.quantity).toLocaleString(undefined, { 
-                                                          minimumFractionDigits: 2, 
-                                                          maximumFractionDigits: 2 
-                                                        })}
-                                                      </p>
+                                                      <div className="element-position ">
+                                                          <h4 style={{margin: "0px 0px 0px 0px" }}>{item.name}</h4>
+                                                      </div>
 
-                                                    </div>
+                                                      <div className="element-position ">
+                                                          <p style={{margin: "0px 0px 15px 0px", fontSize:"12px"}}>CODE : {item.itemCode}</p>
+                                                      </div>
+                                      
+                                                      <div>
+                                                          <p style={{marginBottom:"1px"}}>
+                                                            Rs.&nbsp;
+                                                            {isNaN(getItemPriceWithDiscount(item)) || getItemPriceWithDiscount(item) === 0
+                                                              ? "N/A"
+                                                              : getItemPriceWithDiscount(item).toLocaleString(undefined, { 
+                                                                  minimumFractionDigits: 2, 
+                                                                  maximumFractionDigits: 2 
+                                                                })}
+                                                            / Pair 
+                                                          </p>
+                                                          <p>
+                                                            {item.discount === 0 ? "" : `${item.discount}% discount included`}
+                                                          </p>
+                                                      </div>
+                                                      
+                                                      <div className="d-flex justify-content-between">
+                                                          <p style={{margin:"0px"}}>Quantity : {item.quantity}</p>
+                                                          <p style={{ margin: "0px" }}>
+                                                            Rs {(getItemPriceWithDiscount(item) * item.quantity).toLocaleString(undefined, { 
+                                                              minimumFractionDigits: 2, 
+                                                              maximumFractionDigits: 2 
+                                                            })}
+                                                          </p>
+
+                                                      </div>
                                                 
                                                     
-                                                    <div >
-                                                        <div className="size-container">
-                                                            {Object.entries(item.selectedSizes).map(([size, quantity]) => (
-                                                              <div key={size} className="size-item ">
-                                                                <div>Size {size}</div>
+                                                      <div >
+                                                          <div className="size-container">
+                                                              {Object.entries(item.selectedSizes).map(([size, quantity]) => (
+                                                                <div key={size} className="size-item ">
+                                                                  <div>Size {size}</div>
 
-                                                                <div className="size-item-buttons th">
-                                                                    
+                                                                  <div className="size-item-buttons th">
+                                                                      
+                                                                        <button
+                                                                          className="size-button" onClick={() => updateQuantity(item.id, Number(size), -1)}>
+                                                                            <div>
+
+                                                                              <svg
+                                                                              
+                                                                                  className="minus"
+                                                                                  style={{display:"flex", justifyContent:"center", alignItems:"center"}}
+                              
+                                                                                  width="12"
+                                                                                  height="12"
+                                                                                  xmlns="http://www.w3.org/2000/svg"
+                                                                                  xmlnsXlink="http://www.w3.org/1999/xlink"
+                                                                                >
+                                                                                  <defs>
+                                                                                    <path
+                                                                                      d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z"
+                                                                                      id="b"
+                                                                                    />
+                                                                                  </defs>
+                                                                                  <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
+                                                                                </svg>    
+                                                                            </div>
+                                                                        </button>
+                                                                                                    
+                                                                        
+    
+                                                                      <div  style={{padding:"0px" , width:"2px", display:"flex", justifyContent:"center", alignItems:"center"}} >
+                                                                          <span style={{padding:"0px"}} className="cart2-values">{quantity}</span>
+                                                                      </div>
+                                                    
                                                                       <button
-                                                                        className="size-button" onClick={() => updateQuantity(item.id, Number(size), -1)}>
-                                                                          <div>
-
+                                                                        className="size-button" onClick={() => updateQuantity(item.id, Number(size), 1)}>
                                                                             <svg
                                                                             
-                                                                                className="minus"
+                                                                                className="plus"
                                                                                 style={{display:"flex", justifyContent:"center", alignItems:"center"}}
-                            
                                                                                 width="12"
                                                                                 height="12"
                                                                                 xmlns="http://www.w3.org/2000/svg"
@@ -378,40 +525,12 @@ const ShoppingCart: React.FC = () => {
                                                                                 </defs>
                                                                                 <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
                                                                               </svg>    
-                                                                          </div>
                                                                       </button>
-                                                                                                  
-                                                                      
-  
-                                                                    <div  style={{padding:"0px" , width:"2px", display:"flex", justifyContent:"center", alignItems:"center"}} >
-                                                                        <span style={{padding:"0px"}} className="cart2-values">{quantity}</span>
-                                                                    </div>
-                                                  
-                                                                    <button
-                                                                      className="size-button" onClick={() => updateQuantity(item.id, Number(size), 1)}>
-                                                                           <svg
-                                                                           
-                                                                              className="plus"
-                                                                              style={{display:"flex", justifyContent:"center", alignItems:"center"}}
-                                                                              width="12"
-                                                                              height="12"
-                                                                              xmlns="http://www.w3.org/2000/svg"
-                                                                              xmlnsXlink="http://www.w3.org/1999/xlink"
-                                                                            >
-                                                                              <defs>
-                                                                                <path
-                                                                                  d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z"
-                                                                                  id="b"
-                                                                                />
-                                                                              </defs>
-                                                                              <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
-                                                                            </svg>    
-                                                                    </button>
+                                                                  </div>
                                                                 </div>
-                                                              </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
+                                                              ))}
+                                                          </div>
+                                                      </div>
                                             
                                                         
                                                   </div>
