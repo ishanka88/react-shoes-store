@@ -1,0 +1,83 @@
+.checkout-modal .modal-content {
+    border-radius: 15px;
+    padding: 10px;
+  }
+  
+.checkout-modal .modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+    
+.margin-bottom {
+    padding-bottom: 12px;
+}
+  
+.required {
+    color: red;
+}
+  
+.checkout-modal .modal-body {
+    padding: 20px;
+
+}
+
+
+.custom-confirm-button  {
+    width: 120px;
+    height: 36px;
+    padding: 0px 28px;
+    margin: 20px 0;
+    background-color:#ff6600;
+    color: white;
+    font-family: "Inter",Arial, Helvetica, sans-serif;
+    border: none;
+    border-radius: 100px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .custom-confirm-button :hover {
+    color: black;
+  }
+
+  
+
+.custom-cancel-button {
+    width: 120px;
+    height: 36px;
+    padding: 0px 28px;
+    margin: 20px 0;
+    background-color:#ff4133;
+    color: white;
+    font-family: "Inter",Arial, Helvetica, sans-serif;
+    border: none;
+    border-radius: 100px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .custom-cancel-button :hover {
+    color: black;
+  }
+  
+
+
+  
+.required {
+    color: #dc3545;
+}
+
+.form-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.card-details {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}

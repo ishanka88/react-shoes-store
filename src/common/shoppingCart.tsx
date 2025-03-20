@@ -27,6 +27,12 @@ import { UserCartDetails } from "../services/UserCartDetails";
 import {useProductData} from "../context/DataContext"
 import { CartItem } from "../models/CartItem";
 
+import CheckoutForm from './elements/checkoutForm'; // Import the CheckoutForm component
+
+import { getAuth } from "firebase/auth";
+import { Alert } from "react-bootstrap";
+import { PenLine, Save } from "lucide-react";
+
 // interface CartItem {
 //   id: number;
 //   productId:string;
@@ -54,9 +60,9 @@ interface ModifiedCartItem {
 
 
 const ShoppingCart: React.FC = () => {
+  const auth = getAuth();
   const { productsList , loading } = useProductData();
   
-  const [verticalActiveTabWithIcon, setVerticalActiveTabWithIcon] = useState("1");
   const [availableCartProductsList, setAvailableCartProductsList] = useState<Product[]>([]); // Initialize state
 
 
@@ -65,6 +71,18 @@ const ShoppingCart: React.FC = () => {
   const [selectAll, setSelectAll] = useState(false);
 
   const [saveButton, setSaveButton] = useState(true);
+
+  const [isCartAvailable, setIsCartAvailable] = useState(false);
+
+  const [deliverCharges, setDeliverCharges] = useState(0);
+
+  useEffect(() => {
+    if(cart){
+      setIsCartAvailable(true)
+    }
+
+  },[cart])
+  
 
   useEffect(() => {
     const loadCartData = async () => {
@@ -137,11 +155,10 @@ const ShoppingCart: React.FC = () => {
         console.error("Error parsing cart data:", error);
       }
     };
-
-    loadCartData(); // Call the async function
+    loadCartData();
+     // Call the async function
   }, [loading]);
   
-
 
   // Function to find a product by its ID
   const findProductById = (id: string): Product | undefined => {
@@ -200,7 +217,6 @@ const ShoppingCart: React.FC = () => {
             discount: product.discount ?? 0 // ✅ Ensure discount is a number
           };
         }
-
         return cartItem; // Keep unchanged if product not found
       })
     );
@@ -264,18 +280,30 @@ const ShoppingCart: React.FC = () => {
     item.selected ? acc + item.quantity : acc, 0
   );
 
-  const deliverCharges = ()=>{
-    if(selectedTotalPairs===0 ){
-      return [0,"Rs. 0.00"]
-    }if (selectedTotalPairs===1) {
-      return [400,"Rs. 400.00"]
+  const checkDeliverCharges = () => {
+    let charges;
+    let displayText;
+  
+    if (selectedTotalPairs === 0) {
+      charges = 0;
+      displayText = "Rs. 0.00";
+    } else if (selectedTotalPairs === 1) {
+      charges = 400;
+      displayText = "Rs. 400.00";
     } else {
-      return [0, <span color="green"> Free</span>]
+      charges = 0;
+      displayText = <span style={{ color: "green", fontWeight:"bold" }}>Free</span>;
     }
-  }
+
+    // Return both the charge amount and the display string
+    return [charges, displayText];
+  };
+  
 
 
-  const removeItem = (id: number) => {
+  const removeItem = (id: number ,productId: string) => {
+    setSaveButton(false)
+    setCartListFromDatabase(cartListFromDatabase.filter(item => item.id !== productId));
     setCart(cart.filter(item => item.id !== id));
   };
 
@@ -320,6 +348,7 @@ const ShoppingCart: React.FC = () => {
 
           // Step 4: Handle success or failure
           if (response) {
+            setSaveButton(true)
             alert("Cart successfully saved!");
           } else {
             alert("Error saving the cart. Please try again.");
@@ -343,6 +372,25 @@ const ShoppingCart: React.FC = () => {
     return 0; // Return "N/A" if price or discount is not available
   };
   
+
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedOrders, setSelectedOrders] = useState(false);
+
+  const checkoutForm = ()=>{
+    if(!saveButton){
+        alert("Since the cart has been updated, please save it before proceeding.")
+        saveCart()
+        return
+    }
+    const user = auth.currentUser;
+    if(!user){
+      alert("Please sign in to complete your order.")
+      return
+    }
+ 
+    setModalOpen(true)
+  }
 
 
 
@@ -394,152 +442,158 @@ const ShoppingCart: React.FC = () => {
 
                                     
                                   </div>
-
-                                  <div style={{margin:"1rem 0rem 0rem 0rem"}}>
-                                      
-                                      {cart.map(item => (
-                                        <Row key={item.id} className="mb-3 cart-item">
-                                          <Col xl={12} md={12} xs={12}>
-                                            <div className="d-flex align-items-center justify-content-between">
-                                              <div>
-                                                <Input
-                                                  type="checkbox"
-                                                  checked={item.selected}
-                                                  onChange={() => toggleSelect(item.id)}
-                                                  className="me-3"
-                                                />
-                                              </div>
-                                              <div className="d-flex align-items-center ">
-                                                <FontAwesomeIcon icon={faTrash} onClick={() => removeItem(item.id)}/>
-                                                
-                                                {/* <FaTrash className="d-flex align-items-center delete-button " onClick={() => removeItem(item.id)} /> */}
-                                              </div>
-                                            </div>
-                                          
-                                            <Row>
-                                                <Col xl={4} lg={4} md={4} >
-                                                  <div style={{padding:"0px 10px 10px 10px"}}>
-                                                    <img
-                                                      src={item.mainImage}
-                                                      alt={item.name}
-                                                      className="img-fluid rounded-3 thumbnail-image"
-                                                      style={{borderRadius:"15px", padding:"0px"}}
-                                                    />
-                                                  </div>
-                                                </Col>
-                        
-                                                <Col xl={8} lg={8} md={8}>
-
-                                                  <div className="">
-                                                      <div className="element-position ">
-                                                          <h4 style={{margin: "0px 0px 0px 0px" }}>{item.name}</h4>
-                                                      </div>
-
-                                                      <div className="element-position ">
-                                                          <p style={{margin: "0px 0px 15px 0px", fontSize:"12px"}}>CODE : {item.itemCode}</p>
-                                                      </div>
-                                      
+                                        {isCartAvailable? (
+                                          <div style={{margin:"1rem 0rem 0rem 0rem"}}>
+                                              
+                                              {cart.map(item => (
+                                                <Row key={item.id} className="mb-3 cart-item">
+                                                  <Col xl={12} md={12} xs={12}>
+                                                    <div className="d-flex align-items-center justify-content-between">
                                                       <div>
-                                                          <p style={{marginBottom:"1px"}}>
-                                                            Rs.&nbsp;
-                                                            {isNaN(getItemPriceWithDiscount(item)) || getItemPriceWithDiscount(item) === 0
-                                                              ? "N/A"
-                                                              : getItemPriceWithDiscount(item).toLocaleString(undefined, { 
-                                                                  minimumFractionDigits: 2, 
-                                                                  maximumFractionDigits: 2 
-                                                                })}
-                                                            / Pair 
-                                                          </p>
-                                                          <p>
-                                                            {item.discount === 0 ? "" : `${item.discount}% discount included`}
-                                                          </p>
+                                                        <Input
+                                                          type="checkbox"
+                                                          checked={item.selected}
+                                                          onChange={() => toggleSelect(item.id)}
+                                                          className="me-3"
+                                                        />
                                                       </div>
-                                                      
-                                                      <div className="d-flex justify-content-between">
-                                                          <p style={{margin:"0px"}}>Quantity : {item.quantity}</p>
-                                                          <p style={{ margin: "0px" }}>
-                                                            Rs {(getItemPriceWithDiscount(item) * item.quantity).toLocaleString(undefined, { 
-                                                              minimumFractionDigits: 2, 
-                                                              maximumFractionDigits: 2 
-                                                            })}
-                                                          </p>
-
-                                                      </div>
-                                                
-                                                    
-                                                      <div >
-                                                          <div className="size-container">
-                                                              {Object.entries(item.selectedSizes).map(([size, quantity]) => (
-                                                                <div key={size} className="size-item ">
-                                                                  <div>Size {size}</div>
-
-                                                                  <div className="size-item-buttons th">
-                                                                      
-                                                                        <button
-                                                                          className="size-button" onClick={() => updateQuantity(item.id, Number(size), -1)}>
-                                                                            <div>
-
-                                                                              <svg
-                                                                              
-                                                                                  className="minus"
-                                                                                  style={{display:"flex", justifyContent:"center", alignItems:"center"}}
-                              
-                                                                                  width="12"
-                                                                                  height="12"
-                                                                                  xmlns="http://www.w3.org/2000/svg"
-                                                                                  xmlnsXlink="http://www.w3.org/1999/xlink"
-                                                                                >
-                                                                                  <defs>
-                                                                                    <path
-                                                                                      d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z"
-                                                                                      id="b"
-                                                                                    />
-                                                                                  </defs>
-                                                                                  <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
-                                                                                </svg>    
-                                                                            </div>
-                                                                        </button>
-                                                                                                    
-                                                                        
-    
-                                                                      <div  style={{padding:"0px" , width:"2px", display:"flex", justifyContent:"center", alignItems:"center"}} >
-                                                                          <span style={{padding:"0px"}} className="cart2-values">{quantity}</span>
-                                                                      </div>
-                                                    
-                                                                      <button
-                                                                        className="size-button" onClick={() => updateQuantity(item.id, Number(size), 1)}>
-                                                                            <svg
-                                                                            
-                                                                                className="plus"
-                                                                                style={{display:"flex", justifyContent:"center", alignItems:"center"}}
-                                                                                width="12"
-                                                                                height="12"
-                                                                                xmlns="http://www.w3.org/2000/svg"
-                                                                                xmlnsXlink="http://www.w3.org/1999/xlink"
-                                                                              >
-                                                                                <defs>
-                                                                                  <path
-                                                                                    d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z"
-                                                                                    id="b"
-                                                                                  />
-                                                                                </defs>
-                                                                                <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
-                                                                              </svg>    
-                                                                      </button>
-                                                                  </div>
-                                                                </div>
-                                                              ))}
-                                                          </div>
-                                                      </div>
-                                            
+                                                      <div className="d-flex align-items-center ">
+                                                        <FontAwesomeIcon icon={faTrash} onClick={() => removeItem(item.id , item.productId)}/>
                                                         
-                                                  </div>
-                                                </Col>
+                                                        {/* <FaTrash className="d-flex align-items-center delete-button " onClick={() => removeItem(item.id)} /> */}
+                                                      </div>
+                                                    </div>
+                                                  
+                                                    <Row>
+                                                        <Col xl={4} lg={4} md={4} >
+                                                          <div style={{padding:"0px 10px 10px 10px"}}>
+                                                            <img
+                                                              src={item.mainImage}
+                                                              alt={item.name}
+                                                              className="img-fluid rounded-3 thumbnail-image"
+                                                              style={{borderRadius:"15px", padding:"0px"}}
+                                                            />
+                                                          </div>
+                                                        </Col>
+                                
+                                                        <Col xl={8} lg={8} md={8}>
+
+                                                          <div className="">
+                                                              <div className="element-position ">
+                                                                  <h4 style={{margin: "0px 0px 0px 0px" }}>{item.name}</h4>
+                                                              </div>
+
+                                                              <div className="element-position ">
+                                                                  <p style={{margin: "0px 0px 15px 0px", fontSize:"12px"}}>CODE : {item.itemCode}</p>
+                                                              </div>
+                                              
+                                                              <div>
+                                                                  <p style={{marginBottom:"1px"}}>
+                                                                    Rs.&nbsp;
+                                                                    {isNaN(getItemPriceWithDiscount(item)) || getItemPriceWithDiscount(item) === 0
+                                                                      ? "N/A"
+                                                                      : getItemPriceWithDiscount(item).toLocaleString(undefined, { 
+                                                                          minimumFractionDigits: 2, 
+                                                                          maximumFractionDigits: 2 
+                                                                        })}
+                                                                    / Pair 
+                                                                  </p>
+                                                                  <p>
+                                                                    {item.discount === 0 ? "" : `${item.discount}% discount included`}
+                                                                  </p>
+                                                              </div>
+                                                              
+                                                              <div className="d-flex justify-content-between">
+                                                                  <p style={{margin:"0px"}}>Quantity : {item.quantity}</p>
+                                                                  <p style={{ margin: "0px" }}>
+                                                                    Rs {(getItemPriceWithDiscount(item) * item.quantity).toLocaleString(undefined, { 
+                                                                      minimumFractionDigits: 2, 
+                                                                      maximumFractionDigits: 2 
+                                                                    })}
+                                                                  </p>
+
+                                                              </div>
+                                                        
+                                                            
+                                                              <div >
+                                                                  <div className="size-container">
+                                                                      {Object.entries(item.selectedSizes).map(([size, quantity]) => (
+                                                                        <div key={size} className="size-item ">
+                                                                          <div>Size {size}</div>
+
+                                                                          <div className="size-item-buttons th">
+                                                                              
+                                                                                <button
+                                                                                  className="size-button" onClick={() => updateQuantity(item.id, Number(size), -1)}>
+                                                                                    <div>
+
+                                                                                      <svg
+                                                                                      
+                                                                                          className="minus"
+                                                                                          style={{display:"flex", justifyContent:"center", alignItems:"center"}}
+                                      
+                                                                                          width="12"
+                                                                                          height="12"
+                                                                                          xmlns="http://www.w3.org/2000/svg"
+                                                                                          xmlnsXlink="http://www.w3.org/1999/xlink"
+                                                                                        >
+                                                                                          <defs>
+                                                                                            <path
+                                                                                              d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z"
+                                                                                              id="b"
+                                                                                            />
+                                                                                          </defs>
+                                                                                          <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
+                                                                                        </svg>    
+                                                                                    </div>
+                                                                                </button>
+                                                                                                            
+                                                                                
+            
+                                                                              <div  style={{padding:"0px" , width:"2px", display:"flex", justifyContent:"center", alignItems:"center"}} >
+                                                                                  <span style={{padding:"0px"}} className="cart2-values">{quantity}</span>
+                                                                              </div>
+                                                            
+                                                                              <button
+                                                                                className="size-button" onClick={() => updateQuantity(item.id, Number(size), 1)}>
+                                                                                    <svg
+                                                                                    
+                                                                                        className="plus"
+                                                                                        style={{display:"flex", justifyContent:"center", alignItems:"center"}}
+                                                                                        width="12"
+                                                                                        height="12"
+                                                                                        xmlns="http://www.w3.org/2000/svg"
+                                                                                        xmlnsXlink="http://www.w3.org/1999/xlink"
+                                                                                      >
+                                                                                        <defs>
+                                                                                          <path
+                                                                                            d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z"
+                                                                                            id="b"
+                                                                                          />
+                                                                                        </defs>
+                                                                                        <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
+                                                                                      </svg>    
+                                                                              </button>
+                                                                          </div>
+                                                                        </div>
+                                                                      ))}
+                                                                  </div>
+                                                              </div>
+                                                    
+                                                                
+                                                          </div>
+                                                        </Col>
+                                                        </Row>
+                                                  </Col>
                                                 </Row>
-                                          </Col>
-                                        </Row>
-                                      ))}
-                                  </div>
+                                              ))
+                                              }
+                                          </div>
+                                          ):(
+                                            <div className="d-flex justify-content-center" style={{padding: "80px" , fontWeight:"bold"}}> <span> Loading ... !</span></div>
+                                          )
+                                        }
+
 
                               </Col>
                               {/* Right Side - Takes 4 columns on xl, 12 on smaller screens */}
@@ -559,7 +613,7 @@ const ShoppingCart: React.FC = () => {
                                         
                                         <div className="subtotal-row black-line">
                                             <span>Delivery Charges</span>
-                                            <span>{deliverCharges()[1]}</span>
+                                            <span>{checkDeliverCharges()[1]}</span>
 
                                         
                                         </div>
@@ -567,7 +621,7 @@ const ShoppingCart: React.FC = () => {
                                         <div className="total-row" >
                                             <span>Total</span>
                                             <span>
-                                                Rs. {(Number(subtotal) + Number(deliverCharges()?.[0] || 0)).toLocaleString('en-IN', { 
+                                                Rs. {(Number(subtotal) + Number(checkDeliverCharges()?.[0] || 0)).toLocaleString('en-IN', { 
                                                   minimumFractionDigits: 2, 
                                                   maximumFractionDigits: 2 
                                                 })}
@@ -575,14 +629,16 @@ const ShoppingCart: React.FC = () => {
                                          
                                         </div>
                                         
-                                        <button className="checkout-button">
+                                        <button className="checkout-button" onClick={checkoutForm}>
                                           <FontAwesomeIcon 
                                             icon={faLock} 
                                             style={{height: "14px", margin: "0px 8px 2px 0px"}} 
                                           />
                                           <span>Check out</span>
                                         </button>
+                                        <CheckoutForm isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)} />
                                         
+                                                                            
                                         <div className ="protected-section">
                                             <h3>You're protected on Tacco.lk</h3>
                                             <ul className="protection-list">
@@ -684,6 +740,7 @@ const ShoppingCart: React.FC = () => {
 
                 </main>
             </div>
+
 
         </React.Fragment>
     );
