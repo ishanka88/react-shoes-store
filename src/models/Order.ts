@@ -1,24 +1,25 @@
 export interface Order {
     id?: any;
     amount?: number;
-    createdAt?: Date;
+    deliverCharges?: number;
+    createdAt?: Date|undefined;
     stock?: number;
     orderItems?: OrderItem[];
     status?: string;
     orderId?: string;
+    tracking?: string;
     itemCount?: number;
     createdUserId?: string;
     createdUserRef?: string;
 }
 export interface OrderItem {
-    id?: any;
-    title?: string;
+    itemCode?: string;
+    mainImage?: string;
+    title?:string;
     price?: number;
-    item: {
-        category?: string;
-        price?: string;
-        title?: string;
-    }
+    discount?: number;
+    quantity?: number,
+    sizes?: { [size: number]: number }; 
     // Other properties of an order item
 }
 

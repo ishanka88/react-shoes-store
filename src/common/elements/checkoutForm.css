@@ -1,6 +1,7 @@
 .checkout-modal .modal-content {
     border-radius: 15px;
     padding: 10px;
+    margin-top: 120px;
   }
   
 .checkout-modal .modal-header {
@@ -81,3 +82,41 @@
     border-radius: 8px;
     margin-top: 15px;
 }
+
+.cart-item-div {
+    display: flex;
+    justify-content: start;
+    align-items: top;
+    font-size: 1.2rem;
+    height: 100px; /* Allow the height to adjust based on content */
+    padding-left: 20px;
+    padding-right: 20px;
+  
+ }
+
+.cart-item-col1 {
+    /* border: 1px solid red; */
+    height: 80px;
+    display: flex;
+    justify-content: start;
+    padding-right: 10px;
+  }
+
+.cart-item-col2 {
+    /* border: 1px solid red; */
+    width: 100%;
+}
+.cart-para {
+    color: var(--DarkGrayishBlue);
+    font-size: 1rem;
+  }
+
+.thumbnail-image {
+    width: 100%;
+   /* Added for better mobile control */
+    height: 100%;
+   
+   
+    object-fit: contain;
+    border-radius: 15px;
+  }

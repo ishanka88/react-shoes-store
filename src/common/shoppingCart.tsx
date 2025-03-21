@@ -33,6 +33,9 @@ import { getAuth } from "firebase/auth";
 import { Alert } from "react-bootstrap";
 import { PenLine, Save } from "lucide-react";
 
+import { Order ,OrderItem} from "../models/Order";
+import { it } from "node:test";
+
 // interface CartItem {
 //   id: number;
 //   productId:string;
@@ -47,7 +50,7 @@ import { PenLine, Save } from "lucide-react";
 interface ModifiedCartItem {
   id: number;
   productId:string;
-  name: string;
+  title: string;
   itemCode:string;
   mainImage: string;
   selectedSizes: { [key: number]: number };
@@ -74,7 +77,16 @@ const ShoppingCart: React.FC = () => {
 
   const [isCartAvailable, setIsCartAvailable] = useState(false);
 
+
+  const [selectedTotalPairs, setSelectedTotalPairs] = useState(0);
+  const [subtotal, setSubtotal] = useState(0);
   const [deliverCharges, setDeliverCharges] = useState(0);
+  const [deliverChargesText, setDeliverChargesText] = useState<string | JSX.Element>("");
+
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const [newOrder, setNewOrder] = useState<Order>();
+  
 
   useEffect(() => {
     if(cart){
@@ -125,7 +137,7 @@ const ShoppingCart: React.FC = () => {
                 const modifiedCartItem: ModifiedCartItem = {
                   id: index + 1, // Use index+1 for unique item IDs (starting from 1)
                   productId: item.id,
-                  name: product.name || "",
+                  title: product.name || "",
                   itemCode: item.itemCode || "",
                   mainImage: product.mainImages[0],
                   selectedSizes: updatedSelectedSizesArray,
@@ -276,29 +288,53 @@ const ShoppingCart: React.FC = () => {
     }));
   };
 
-  const selectedTotalPairs = cart.reduce((acc, item) => 
-    item.selected ? acc + item.quantity : acc, 0
-  );
 
-  const checkDeliverCharges = () => {
-    let charges;
-    let displayText;
-  
-    if (selectedTotalPairs === 0) {
-      charges = 0;
-      displayText = "Rs. 0.00";
-    } else if (selectedTotalPairs === 1) {
-      charges = 400;
-      displayText = "Rs. 400.00";
-    } else {
-      charges = 0;
-      displayText = <span style={{ color: "green", fontWeight:"bold" }}>Free</span>;
-    }
 
-    // Return both the charge amount and the display string
-    return [charges, displayText];
+  const checkSelectedTotalPairs = () => {
+    // Calculate the total quantity of selected items
+    const selectedPairsCount = cart.reduce((acc, item) =>
+      item.selected ? acc + item.quantity : acc, 0
+    );
+
+    setSelectedTotalPairs(selectedPairsCount); // Update the state with the selected pairs count
+    return selectedPairsCount; // Return the selected pairs count for other uses if needed
   };
-  
+
+  const checkSubtotal = () => {
+    // Calculate the total quantity of selected items
+    const subtotal = cart.filter(item => item.selected).reduce((acc, item) =>
+      acc + (item.price * ((100 - Number(item.discount)) / 100))* Object.values(item.selectedSizes).reduce((sum, qty) => sum + qty, 0), 0
+    );
+
+    setSubtotal(subtotal); // Update the state with the selected pairs count
+    return subtotal; // Return the selected pairs count for other uses if needed
+  };
+
+
+  // Optionally, call this function whenever the cart is updated (e.g., after selecting/deselecting items)
+  useEffect(() => {
+    checkSelectedTotalPairs();
+    checkSubtotal();
+  }, [cart]); // Recalculate when cart changes
+
+  // Function to check and update delivery charges
+  const checkDeliverCharges = () => {
+    if (selectedTotalPairs === 0) {
+      setDeliverCharges(0);
+      setDeliverChargesText("Rs. 0.00");
+    } else if (selectedTotalPairs === 1) {
+      setDeliverCharges(400);
+      setDeliverChargesText("Rs. 400.00");
+    } else {
+      setDeliverCharges(0);
+      setDeliverChargesText(<span style={{ color: "green" }}>Free</span>);
+    }
+  };
+
+  // Use useEffect to update delivery charges when selectedTotalPairs changes
+  useEffect(() => {
+    checkDeliverCharges();
+  }, [selectedTotalPairs]); // Dependency on selectedTotalPairs
 
 
   const removeItem = (id: number ,productId: string) => {
@@ -307,9 +343,7 @@ const ShoppingCart: React.FC = () => {
     setCart(cart.filter(item => item.id !== id));
   };
 
-  const subtotal = cart.filter(item => item.selected).reduce((acc, item) =>
-    acc + (item.price * ((100 - Number(item.discount)) / 100))* Object.values(item.selectedSizes).reduce((sum, qty) => sum + qty, 0), 0
-  );
+
 
   
 
@@ -374,8 +408,6 @@ const ShoppingCart: React.FC = () => {
   
 
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedOrders, setSelectedOrders] = useState(false);
 
   const checkoutForm = ()=>{
     if(!saveButton){
@@ -383,15 +415,76 @@ const ShoppingCart: React.FC = () => {
         saveCart()
         return
     }
+    if(selectedTotalPairs === 0){
+      alert("Please select an item to purchase.")
+      return
+    }
     const user = auth.currentUser;
     if(!user){
       alert("Please sign in to complete your order.")
       return
     }
- 
+
+    const dateTimeNow = new Date(); 
+    const selectedItems = cart.filter(item => item.selected);
+    if(!selectedItems){
+      alert("No item slected")
+      return
+    }
+
+
+    const getNonZeroSizes = (sizes: { [size: number]: number }): { [size: number]: number } => {
+      // Filter out sizes with quantity 0 and return them as an object
+      const nonZeroSizes = Object.entries(sizes)
+        .filter(([size, quantity]) => quantity > 0)  // Filter sizes where quantity > 0
+        .reduce((acc, [size, quantity]) => {
+          acc[parseInt(size)] = quantity; // Add size and quantity to the accumulator object
+          return acc;
+        }, {} as { [size: number]: number });  // Start with an empty object
+      
+      return nonZeroSizes;
+    };
+
+    const orderItems: OrderItem[]=[]
+
+    const getSelectedItemDetails = () => {
+      selectedItems.forEach(item => {
+        const nonZeroSizes: { [size: number]: number } = getNonZeroSizes(item.selectedSizes);
+        const totalQuantity = Object.values(nonZeroSizes).reduce((acc, qty) => acc + qty, 0);
+
+        const orderItemDetails: OrderItem = {
+          itemCode: item.itemCode,
+          title: item.title,
+          price: item.price,
+          mainImage:item.mainImage,
+          discount: item.discount,
+          quantity: totalQuantity,
+          sizes: nonZeroSizes, // sizes will now be an object with size and quantity
+        };
+    
+        // Do something with orderItemDetails (e.g., push to orderItems array)
+        orderItems.push(orderItemDetails);
+      });
+    };
+
+    getSelectedItemDetails()
+    
+
+    const newOrder: Order = {
+      id: 5,
+      amount: subtotal,
+      deliverCharges: deliverCharges,
+      createdAt: dateTimeNow || undefined, // Assign Date or undefined
+      orderItems: orderItems,
+      status: "new_order",
+      orderId: "", // You may want to generate or get the actual orderId
+      tracking: "", // Similarly, handle tracking logic
+      createdUserId: user.uid,
+    };
+
+    setNewOrder(newOrder)
     setModalOpen(true)
   }
-
 
 
   return (
@@ -469,7 +562,7 @@ const ShoppingCart: React.FC = () => {
                                                           <div style={{padding:"0px 10px 10px 10px"}}>
                                                             <img
                                                               src={item.mainImage}
-                                                              alt={item.name}
+                                                              alt={item.title}
                                                               className="img-fluid rounded-3 thumbnail-image"
                                                               style={{borderRadius:"15px", padding:"0px"}}
                                                             />
@@ -480,7 +573,7 @@ const ShoppingCart: React.FC = () => {
 
                                                           <div className="">
                                                               <div className="element-position ">
-                                                                  <h4 style={{margin: "0px 0px 0px 0px" }}>{item.name}</h4>
+                                                                  <h4 style={{margin: "0px 0px 0px 0px" }}>{item.title}</h4>
                                                               </div>
 
                                                               <div className="element-position ">
@@ -601,7 +694,7 @@ const ShoppingCart: React.FC = () => {
                                   <Row className="justify-content-center mt-5 ">
 
                                     <div className="order-summary">
-                                        <h2 className="title">Order summary ({selectedTotalPairs} {selectedTotalPairs === 1 ? 'Pair' : 'Pairs'}) </h2>
+                                        <h2 className="title">Order summary ({selectedTotalPairs === 1 ? 'Pair' : 'Pairs'}) </h2>
                                         
                                         <div className="subtotal-row">
                                             <span>Subtotal</span>
@@ -613,7 +706,7 @@ const ShoppingCart: React.FC = () => {
                                         
                                         <div className="subtotal-row black-line">
                                             <span>Delivery Charges</span>
-                                            <span>{checkDeliverCharges()[1]}</span>
+                                            <span>{deliverChargesText}</span>
 
                                         
                                         </div>
@@ -621,7 +714,7 @@ const ShoppingCart: React.FC = () => {
                                         <div className="total-row" >
                                             <span>Total</span>
                                             <span>
-                                                Rs. {(Number(subtotal) + Number(checkDeliverCharges()?.[0] || 0)).toLocaleString('en-IN', { 
+                                                Rs. {(Number(subtotal) + deliverCharges).toLocaleString('en-IN', { 
                                                   minimumFractionDigits: 2, 
                                                   maximumFractionDigits: 2 
                                                 })}
@@ -636,7 +729,7 @@ const ShoppingCart: React.FC = () => {
                                           />
                                           <span>Check out</span>
                                         </button>
-                                        <CheckoutForm isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)} />
+                                        <CheckoutForm newOrder={newOrder} isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)} />
                                         
                                                                             
                                         <div className ="protected-section">

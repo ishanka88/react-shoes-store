@@ -27,7 +27,7 @@ import { AuthService } from "./services/AuthService";
 import AdminFooter from "./admin/footer";
 import AdminHeader from "./admin/header";
 import AddProducts from "./admin/products";
-import Orders from "./admin/orders";
+// import Orders from "./admin/orders";
 import ContactData from "./admin/contact";
 
 
@@ -98,7 +98,7 @@ const App: React.FC = () => {
               <AdminHeader />
               <Switch>
                 <Route path={RouteName.ADD_PRODUCTS} component={AddProducts} />
-                <Route path={RouteName.ORDERS} component={Orders} />
+                {/* <Route path={RouteName.ORDERS} component={Orders} /> */}
                 <Route path={RouteName.CONTACT} component={ContactData} />
               </Switch>
               <AdminFooter />
@@ -108,7 +108,7 @@ const App: React.FC = () => {
             <>
               <AdminHeader />
               <Switch>
-                <Route path={RouteName.ORDERS} component={Orders} />
+                {/* <Route path={RouteName.ORDERS} component={Orders} /> */}
                 <Route path={RouteName.CONTACT} component={ContactData} />
               </Switch>
               <AdminFooter />
