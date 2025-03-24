@@ -1,18 +1,22 @@
 export interface Order {
-    id?: any;
+    id?: number;
+    tracking?: string;
     amount?: number;
     deliverCharges?: number;
     createdAt?: Date|undefined;
-    stock?: number;
     orderItems?: OrderItem[];
     status?: string;
-    orderId?: string;
-    tracking?: string;
     itemCount?: number;
     createdUserId?: string;
-    createdUserRef?: string;
+    address?: string;
+    contact1?: string;
+    contact2?: string;
+    city? : string;
+    paymentMethod?: string;
 }
 export interface OrderItem {
+    id?: number;
+    productId?:string;
     itemCode?: string;
     mainImage?: string;
     title?:string;

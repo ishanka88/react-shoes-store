@@ -120,7 +120,10 @@
   opacity: 0.8;           /* Makes it look visually disabled */
 }
 
-
+.element-position{
+  display: flex;
+  justify-content: start;
+}
 
   /* Enhanced mobile styles */
   @media (max-width: 425px) {
@@ -148,6 +151,11 @@
       font-size: 18px;
       height: 20px;
       width: 15px;
+    }
+
+    .element-position{
+      display: flex;
+      justify-content: center;
     }
   }
 

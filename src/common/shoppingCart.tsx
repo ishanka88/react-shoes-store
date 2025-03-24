@@ -59,6 +59,7 @@ interface ModifiedCartItem {
   price: number;
   discount:number;
   selected: boolean;
+  stock:number;
 }
 
 
@@ -86,7 +87,7 @@ const ShoppingCart: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
 
   const [newOrder, setNewOrder] = useState<Order>();
-  
+
 
   useEffect(() => {
     if(cart){
@@ -146,6 +147,7 @@ const ShoppingCart: React.FC = () => {
                   price: product.price || 0,
                   discount: product.discount || 0,
                   selected: false,
+                  stock:product.stock||0
                 };
 
                 modifiedCartItemList.push(modifiedCartItem);
@@ -251,14 +253,38 @@ const ShoppingCart: React.FC = () => {
 
 
   const toggleSelect = (id: number) => {
-    setCart(cart.map(item => (item.id === id ? { ...item, selected: !item.selected } : item)));
+    setCart(cart.map(item => {
+      if (item.id === id) {
+        // Check if quantity is 0 and show an alert
+        if (item.quantity === 0) {
+          alert(`Select at least a pair in CODE ${item.itemCode}`);
+          return item;  // Return the item as is, don't toggle selection
+        }
+  
+        // If quantity is not 0, toggle the selected property
+        return { ...item, selected: !item.selected };
+      }
+      return item;  // If id doesn't match, return item unchanged
+    }));
   };
+  
 
   const toggleSelectAll = () => {
     const newSelectAll = !selectAll;
+    
+    // First, check if any item has quantity === 0 and show an alert
+    const hasZeroQuantityItem = cart.some(item => item.quantity === 0);
+    
+    if (hasZeroQuantityItem) {
+      alert("Some items have a quantity of 0 and cannot be selected.");
+      return; // Stop execution and don't toggle selection
+    }
+  
+    // If no items with quantity 0, toggle select all
     setSelectAll(newSelectAll);
     setCart(cart.map(item => ({ ...item, selected: newSelectAll })));
   };
+  
 
   const updateQuantity = (id: number, size: number, amount: number) => {
     setSaveButton(false)
@@ -337,12 +363,23 @@ const ShoppingCart: React.FC = () => {
   }, [selectedTotalPairs]); // Dependency on selectedTotalPairs
 
 
-  const removeItem = (id: number ,productId: string) => {
-    setSaveButton(false)
-    setCartListFromDatabase(cartListFromDatabase.filter(item => item.id !== productId));
-    setCart(cart.filter(item => item.id !== id));
+  const removeItem = (id: number, productId: string) => {
+    // Update cartListFromDatabase and cart state
+    setSaveButton(false);
+    
+    // Remove from cartListFromDatabase by matching productId (make sure productId is used in cartListFromDatabase)
+    setCartListFromDatabase(prevCartList =>
+      prevCartList.filter(item => item.id !== productId) // productId should match the field used in cartListFromDatabase
+    );
+    
+    // Remove from cart by matching id
+    setCart(prevCart =>
+      prevCart.filter(item => item.id !== id) // id should match the field used in cart
+    );
+    
+    console.log(cart); // For debugging
   };
-
+  
 
 
   
@@ -365,36 +402,36 @@ const ShoppingCart: React.FC = () => {
     });
   };
 
-  // Function to handle the save cart process
-  const saveCart = ()=>{
-      const save = async () => {
 
-        // Step 1: Confirm the action before proceeding
-        const isConfirmed = window.confirm("Are you sure you want to save the cart?");
-        if (!isConfirmed) return; // If not confirmed, exit early
+  const saveCart = async () => {
+    // Step 2: Update the cart list with the new sizes and quantities
+    const updatedCartList = updateCartWithNewSizes(cartListFromDatabase, cart);
 
-        // Step 2: Update the cart list with the new sizes and quantities
-        const updatedCartList = updateCartWithNewSizes(cartListFromDatabase, cart);
+    // Step 3: Try to save the updated cart list
+    try {
+      const response = await UserCartDetails.addUserCartDetails(updatedCartList);
 
-        // Step 3: Try to save the updated cart list
-        try {
-          const response = await UserCartDetails.addUserCartDetails(updatedCartList);
-
-          // Step 4: Handle success or failure
-          if (response) {
-            setSaveButton(true)
-            alert("Cart successfully saved!");
-          } else {
-            alert("Error saving the cart. Please try again.");
-          }
-        } catch (error) {
-          // Step 5: Catch any errors and log them
-          console.error("Error saving cart:", error);
-          alert("An error occurred while saving the cart. Please try again.");
-        }
-
+      // Step 4: Handle success or failure
+      if (response) {
+        setSaveButton(true)
+        alert("Cart successfully saved!");
+      } else {
+        alert("Error saving the cart. Please try again.");
       }
-      save()
+    } catch (error) {
+      // Step 5: Catch any errors and log them
+      console.error("Error saving cart:", error);
+      alert("An error occurred while saving the cart. Please try again.");
+    }
+
+  }
+
+  // Function to handle the save cart process
+  const handleSaveCart = ()=>{
+          // Step 1: Confirm the action before proceeding
+    const isConfirmed = window.confirm("Are you sure you want to save the cart?");
+    if (!isConfirmed) return; // If not confirmed, exit early
+    saveCart()
   };
 
   const getItemPriceWithDiscount = (item: ModifiedCartItem): number => {
@@ -409,11 +446,13 @@ const ShoppingCart: React.FC = () => {
 
 
 
-  const checkoutForm = ()=>{
+  const checkoutForm = async ()=>{
     if(!saveButton){
-        alert("Since the cart has been updated, please save it before proceeding.")
-        saveCart()
+        const isConfirmed = window.confirm("Since the cart has been updated, would you like to save it automatically and continue?");
+        if (!isConfirmed) return; // If not confirmed, exit early
+        await saveCart()
         return
+        
     }
     if(selectedTotalPairs === 0){
       alert("Please select an item to purchase.")
@@ -453,6 +492,8 @@ const ShoppingCart: React.FC = () => {
         const totalQuantity = Object.values(nonZeroSizes).reduce((acc, qty) => acc + qty, 0);
 
         const orderItemDetails: OrderItem = {
+          id:item.id,
+          productId: item.productId,
           itemCode: item.itemCode,
           title: item.title,
           price: item.price,
@@ -471,20 +512,21 @@ const ShoppingCart: React.FC = () => {
     
 
     const newOrder: Order = {
-      id: 5,
+      // Similarly, handle tracking logic
+      tracking: "",
       amount: subtotal,
       deliverCharges: deliverCharges,
-      createdAt: dateTimeNow || undefined, // Assign Date or undefined
       orderItems: orderItems,
-      status: "new_order",
-      orderId: "", // You may want to generate or get the actual orderId
-      tracking: "", // Similarly, handle tracking logic
       createdUserId: user.uid,
+
     };
 
     setNewOrder(newOrder)
     setModalOpen(true)
   }
+
+
+
 
 
   return (
@@ -530,7 +572,7 @@ const ShoppingCart: React.FC = () => {
                                     </div>
 
                                     <div>
-                                      <button className ={saveButton? `save-cart-btn disabled `:` save-cart-btn `}  onClick={() => saveCart()}>Save Changes</button>
+                                      <button className ={saveButton? `save-cart-btn disabled `:` save-cart-btn `}  onClick={() => handleSaveCart()}>Save Changes</button>
                                     </div>
 
                                     
@@ -596,82 +638,116 @@ const ShoppingCart: React.FC = () => {
                                                                   </p>
                                                               </div>
                                                               
-                                                              <div className="d-flex justify-content-between">
-                                                                  <p style={{margin:"0px"}}>Quantity : {item.quantity}</p>
-                                                                  <p style={{ margin: "0px" }}>
-                                                                    Rs {(getItemPriceWithDiscount(item) * item.quantity).toLocaleString(undefined, { 
-                                                                      minimumFractionDigits: 2, 
-                                                                      maximumFractionDigits: 2 
-                                                                    })}
-                                                                  </p>
-
-                                                              </div>
                                                         
-                                                            
-                                                              <div >
-                                                                  <div className="size-container">
-                                                                      {Object.entries(item.selectedSizes).map(([size, quantity]) => (
-                                                                        <div key={size} className="size-item ">
-                                                                          <div>Size {size}</div>
+                                                              {item.stock===0? (
+                                                                <div
+                                                                  className="text-center"
+                                                                  style={{
+                                                                    display: "flex",
+                                                                    justifyContent: "center",
+                                                                    alignItems: "center",
+                                                                    padding: "15px 0px 10px 0px",
+                                                                  }}
+                                                                >
+                                                                  <span 
+                                                                  style={{
+                                                                    fontSize: "24px",   // Large enough to catch attention
+                                                                    fontWeight: "bold",  // Make the text stand out
+                                                                    color: "#dc3545",    // Red color to indicate urgency
+                                                                    textTransform: "uppercase", // Make it bold and clear
+                                                                    letterSpacing: "1px", // Slight spacing for a more modern look
+                                                                    textDecoration: "line-through", // Optional: Strikethrough adds to the "out of stock" feel
+                                                                    opacity: "0.8",       // Optional: Slightly reduce opacity to show it's unavailable
+                                                                  }}
+                                                                  
+                                                                  >Sold Out</span>
+                                                                </div>
+                                                              
+                                                              ):(
 
-                                                                          <div className="size-item-buttons th">
-                                                                              
-                                                                                <button
-                                                                                  className="size-button" onClick={() => updateQuantity(item.id, Number(size), -1)}>
-                                                                                    <div>
+                                                                <div>
 
-                                                                                      <svg
-                                                                                      
-                                                                                          className="minus"
-                                                                                          style={{display:"flex", justifyContent:"center", alignItems:"center"}}
-                                      
-                                                                                          width="12"
-                                                                                          height="12"
-                                                                                          xmlns="http://www.w3.org/2000/svg"
-                                                                                          xmlnsXlink="http://www.w3.org/1999/xlink"
-                                                                                        >
-                                                                                          <defs>
-                                                                                            <path
-                                                                                              d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z"
-                                                                                              id="b"
-                                                                                            />
-                                                                                          </defs>
-                                                                                          <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
-                                                                                        </svg>    
-                                                                                    </div>
-                                                                                </button>
-                                                                                                            
-                                                                                
-            
-                                                                              <div  style={{padding:"0px" , width:"2px", display:"flex", justifyContent:"center", alignItems:"center"}} >
-                                                                                  <span style={{padding:"0px"}} className="cart2-values">{quantity}</span>
-                                                                              </div>
-                                                            
-                                                                              <button
-                                                                                className="size-button" onClick={() => updateQuantity(item.id, Number(size), 1)}>
-                                                                                    <svg
-                                                                                    
-                                                                                        className="plus"
-                                                                                        style={{display:"flex", justifyContent:"center", alignItems:"center"}}
-                                                                                        width="12"
-                                                                                        height="12"
-                                                                                        xmlns="http://www.w3.org/2000/svg"
-                                                                                        xmlnsXlink="http://www.w3.org/1999/xlink"
-                                                                                      >
-                                                                                        <defs>
-                                                                                          <path
-                                                                                            d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z"
-                                                                                            id="b"
-                                                                                          />
-                                                                                        </defs>
-                                                                                        <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
-                                                                                      </svg>    
-                                                                              </button>
-                                                                          </div>
-                                                                        </div>
-                                                                      ))}
+
+                                                                  <div className="d-flex justify-content-between">
+                                                                    <p style={{margin:"0px"}}>Quantity : {item.quantity}</p>
+                                                                    <p style={{ margin: "0px" }}>
+                                                                      Rs {(getItemPriceWithDiscount(item) * item.quantity).toLocaleString(undefined, { 
+                                                                        minimumFractionDigits: 2, 
+                                                                        maximumFractionDigits: 2 
+                                                                      })}
+                                                                    </p>
+
                                                                   </div>
-                                                              </div>
+
+                                                                  <div >
+                                                                      <div className="size-container">
+                                                                          {Object.entries(item.selectedSizes).map(([size, quantity]) => (
+                                                                            <div key={size} className="size-item ">
+                                                                              <div>Size {size}</div>
+
+                                                                              <div className="size-item-buttons th">
+                                                                                  
+                                                                                    <button
+                                                                                      className="size-button" onClick={() => updateQuantity(item.id, Number(size), -1)}>
+                                                                                        <div>
+
+                                                                                          <svg
+                                                                                          
+                                                                                              className="minus"
+                                                                                              style={{display:"flex", justifyContent:"center", alignItems:"center"}}
+                                          
+                                                                                              width="12"
+                                                                                              height="12"
+                                                                                              xmlns="http://www.w3.org/2000/svg"
+                                                                                              xmlnsXlink="http://www.w3.org/1999/xlink"
+                                                                                            >
+                                                                                              <defs>
+                                                                                                <path
+                                                                                                  d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z"
+                                                                                                  id="b"
+                                                                                                />
+                                                                                              </defs>
+                                                                                              <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
+                                                                                            </svg>    
+                                                                                        </div>
+                                                                                    </button>
+                                                                                                                
+                                                                                    
+                
+                                                                                  <div  style={{padding:"0px" , width:"2px", display:"flex", justifyContent:"center", alignItems:"center"}} >
+                                                                                      <span style={{padding:"0px"}} className="cart2-values">{quantity}</span>
+                                                                                  </div>
+                                                                
+                                                                                  <button
+                                                                                    className="size-button" onClick={() => updateQuantity(item.id, Number(size), 1)}>
+                                                                                        <svg
+                                                                                        
+                                                                                            className="plus"
+                                                                                            style={{display:"flex", justifyContent:"center", alignItems:"center"}}
+                                                                                            width="12"
+                                                                                            height="12"
+                                                                                            xmlns="http://www.w3.org/2000/svg"
+                                                                                            xmlnsXlink="http://www.w3.org/1999/xlink"
+                                                                                          >
+                                                                                            <defs>
+                                                                                              <path
+                                                                                                d="M12 7.023V4.977a.641.641 0 0 0-.643-.643h-3.69V.643A.641.641 0 0 0 7.022 0H4.977a.641.641 0 0 0-.643.643v3.69H.643A.641.641 0 0 0 0 4.978v2.046c0 .356.287.643.643.643h3.69v3.691c0 .356.288.643.644.643h2.046a.641.641 0 0 0 .643-.643v-3.69h3.691A.641.641 0 0 0 12 7.022Z"
+                                                                                                id="b"
+                                                                                              />
+                                                                                            </defs>
+                                                                                            <use fill="#FF7E1B" fillRule="nonzero" xlinkHref="#b" />
+                                                                                          </svg>    
+                                                                                  </button>
+                                                                              </div>
+                                                                            </div>
+                                                                          ))}
+                                                                      </div>
+                                                                  </div>
+                                                                </div>
+
+
+                                                              )
+                                                              }
                                                     
                                                                 
                                                           </div>
@@ -729,7 +805,7 @@ const ShoppingCart: React.FC = () => {
                                           />
                                           <span>Check out</span>
                                         </button>
-                                        <CheckoutForm newOrder={newOrder} isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)} />
+                                        <CheckoutForm newOrder={newOrder}  isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)}  />
                                         
                                                                             
                                         <div className ="protected-section">

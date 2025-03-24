@@ -8,13 +8,11 @@ import {
   FormGroup,
   Label,
   Input,
+  Button
 } from "reactstrap";
-
 import './checkoutForm.css';
-import { Order, OrderItem } from "../../models/Order";
-import { spawn } from "child_process";
-
-
+import { Order,OrderItem } from "../../models/Order";
+import { placeNewOrder } from "../../firebase/placeNewOrder";
 
 // List of cities for auto-suggest
 const citiesList = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose"];
@@ -22,40 +20,46 @@ const citiesList = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", 
 interface CheckoutModalProps {
   isOpen: boolean;
   toggle: () => void;
-  newOrder: Order|undefined
+  newOrder: Order | undefined;
+
 }
 
-const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle,newOrder }) => {
-  
+const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder  }) => {
+
   // States for form fields
   const [recipientName, setRecipientName] = useState<string>("");
   const [address, setAddress] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [contact1, setContact1] = useState<string>("");
   const [contact2, setContact2] = useState<string>("");
-  const [paymentMethod, setPaymentMethod] = useState<string>("none");
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({}); // To store error messages
+  const [loading, setLoading] = useState<boolean>(false); // State for loading spinner
 
   if (!isOpen) {
     return null;  // If modal isn't open, don't render the content
   }
-  console.log(newOrder?.orderItems)
+
+  console.log(newOrder?.orderItems);
+
   // Regex for validating Sri Lankan contact numbers
   const phoneNumberRegex = /^(?:\+94|0)(71|72|75|76|77|78|79|11|21|22|23|24|25|26|27|28|29|31|32|33|34|35|36|37|38|39|41|42|43|44|45|46|47|48|49|51|52|53|54|55|56|57|58|59|61|62|63|64|65|66|67|68|69|81|82|83|84|85|86|87|88|89|91|92|93|94|95|96|97|98|99)\d{7}$/;
 
   // Handle form submission
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     // Validate contact numbers
     let validationErrors: { [key: string]: string } = {};
+
     if (!phoneNumberRegex.test(contact1)) {
       validationErrors.contact1 = "Invalid number";
-      
     }
     if (contact2 && !phoneNumberRegex.test(contact2)) {
       validationErrors.contact2 = "Invalid number";
-      
+    }
+    if (paymentMethod === "") {
+      validationErrors.paymentMethod = "Select payment method";
     }
 
     // If there are validation errors, set them and don't submit the form
@@ -67,14 +71,46 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle,newOrder })
     const isConfirmed = window.confirm("Are you sure?");
     if (!isConfirmed) return; // If not confirmed, exit early
 
-    // If no validation errors, proceed with form submission
-    alert(`Order placed successfully with the following details:
-      Name: ${recipientName}
-      Address: ${address}, ${city}
-      Contact: ${contact1}, ${contact2}
-      Payment: ${paymentMethod === "cash" ? "Cash on Delivery" : "Card Payment"}`);
 
-    // Reset form and close modal
+    if (newOrder) {
+      // Assign form fields to newOrder
+      newOrder.address = address ?? "";
+      newOrder.city = city ?? "";
+      newOrder.contact1 = contact1 ?? "";
+      newOrder.contact2 = contact2 ?? "";
+      newOrder.paymentMethod = paymentMethod ?? "";
+
+      setLoading(true); // Set loading to true while processing the order
+
+      try {
+        // Place the new order and handle response
+        const response = await placeNewOrder(newOrder);
+
+        if (response.success) {
+          // Handle success (e.g., show success message)
+          alert("Order placed successfully!");
+                    // Assuming the checkout was successful, call the onSubmit callback
+  
+         
+
+
+        } else {
+          if ('error' in response) {
+            // This block is executed when `response` has the `error` property (i.e., the order failed)
+            alert(`Error placing order: ${response.error}`);
+          } else {
+            // This block is executed when `response` has the `orderId` property (i.e., the order was successful)
+            alert(`Order placed successfully! Your order ID is: ${response.orderId}`);
+          }
+        }
+      } catch (error) {
+        console.error("Error placing order:", error);
+        alert("An unexpected error occurred while placing your order.");
+      } finally {
+        setLoading(false); // Reset loading state
+      }
+    }
+
     resetForm();
     toggle();
   };
@@ -90,12 +126,13 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle,newOrder })
     setErrors({}); // Reset errors
   };
 
+
   return (
     <Modal className="checkout-modal" isOpen={isOpen} toggle={toggle} size="lg" centered>
       <ModalHeader toggle={toggle}>Checkout</ModalHeader>
 
     {newOrder?.orderItems?.map((item: OrderItem, index: number) => (
-        <div className="cart-item-div">
+        <div key={index} className="cart-item-div">
             <div className="w-100">
                 <div key={index} className="d-flex justify-content-between align-items-center w-100" style={{padding:"10px 3px 0px 3px"}}> {/* Add key to each item for efficient re-renders */}
                     
@@ -271,7 +308,7 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle,newOrder })
               onChange={(e) => setPaymentMethod(e.target.value)}
               required
             >
-              <option value="none">Select</option>
+              <option value="">Select</option>
               <option value="cash">Cash on Delivery</option>
               {/* <option value="card">Card Payment</option> */}
             </Input>
