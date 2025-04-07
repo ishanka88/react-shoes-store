@@ -1,5 +1,5 @@
 import axios from "axios";
-import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { addDoc, collection, getDocs, query, where,updateDoc } from 'firebase/firestore';
 import { auth, db } from "../firebase/firebaseConfig";
 import { CUSTOMERS, PRODUCTS, CONTACTUS } from "../dbUtils";
 import { User } from "@firebase/auth";
@@ -27,10 +27,21 @@ export class AdminService {
 
     public static async addProduct(product: Product) {
         try {
-            const user = await addDoc(collection(db, PRODUCTS), product);
-            return user;
+            // Add the product to Firestore and get the reference to the document
+            const docRef = await addDoc(collection(db, PRODUCTS), product);
+    
+            // Add the document ID to the product object
+            const productWithId = {
+                ...product,
+                id: docRef.id  // This adds the generated document ID to the product object
+            };
+    
+            // Optionally, you can now update the document with the added `id` field if you want
+            await updateDoc(docRef, { id: docRef.id });
+    
+            return productWithId; // Returning the product object with the document ID
         } catch (e) {
-            console.log('Product added Erroee\r!', e);
+            console.log('Product added Error!', e);
             return e;
         }
     };

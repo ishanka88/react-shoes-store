@@ -70,8 +70,8 @@ const AdminHeader: React.FC = () => {
                                         <div className="main-menu  d-none d-lg-block">
                                             <nav>
                                                 <ul id="navigation">
-                                                    <li><NavLink to={RouteName.ADD_PRODUCTS} activeClassName="active">Products</NavLink></li>
                                                     <li><NavLink to={RouteName.ORDERS} activeClassName="active">Orders</NavLink></li>
+                                                    <li><NavLink to={RouteName.ADD_PRODUCTS} activeClassName="active">Products</NavLink></li>
                                                     <li><NavLink to={RouteName.CONTACT} activeClassName="active">Contact</NavLink></li>
                                                 </ul>
                                             </nav>

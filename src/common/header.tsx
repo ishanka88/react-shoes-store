@@ -136,8 +136,8 @@ const loadCartData = async () => {
       
       // Iterate over cart items and create the display cart items
       for (const item of cartList) {
-        if (item.id){
-          const product = findProductById(item.id);
+        if (item.productId){
+          const product = findProductById(item.productId);
           // Handle case when product is not found
           if (product) {
             const cartItem: DisplayCartItem = {
@@ -156,7 +156,7 @@ const loadCartData = async () => {
             displayCartList.push(cartItem);
           }
         } else {
-          console.warn(`Product with id ${item.id} not found.`);
+          console.warn(`Product with id ${item.productId} not found.`);
         }
       }
 

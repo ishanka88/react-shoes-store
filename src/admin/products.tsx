@@ -327,6 +327,7 @@ const AddProducts: React.FC = () => {
                 mainImages: mainImageUrls,
                 galleryImages: galleryImageUrls,
                 sizes:sizes.sizesList,
+                displayOrder:products.length+1
 
             }
 

@@ -1,0 +1,52 @@
+.phone-link {
+    color: blue; /* Set the text color */
+    font-size: 16px; /* Adjust font size */
+    text-decoration: none; /* Remove underline */
+    padding: 5px 10px; /* Add some padding */
+    border: 1px solid blue; /* Border to make it look like a button */
+    border-radius: 5px; /* Rounded corners */
+  }
+  .phone-link:hover {
+    background-color: lightblue; /* Add hover effect */
+  }
+
+.custom-confirm-button  {
+    width: 120px;
+    height: 36px;
+    padding: 0px 28px;
+    margin: 20px 0;
+    background-color:#2e9b0d;
+    color: white;
+    font-family: "Inter",Arial, Helvetica, sans-serif;
+    border: none;
+    border-radius: 100px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .custom-confirm-button :hover {
+    color: black;
+  }
+
+  
+
+.custom-cancel-button {
+    width: 120px;
+    height: 36px;
+    padding: 0px 28px;
+    margin: 20px 0;
+    background-color:#ff4133;
+    color: white;
+    font-family: "Inter",Arial, Helvetica, sans-serif;
+    border: none;
+    border-radius: 100px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .custom-cancel-button :hover {
+    color: black;
+  }
+  

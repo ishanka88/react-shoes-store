@@ -31,7 +31,6 @@ const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
                 // Map through the docs and get both the document ID and data
             // Map through documents and include `id` in each product's data
             const fetchedData = shoesProductsSnapshot.docs.map((doc) => ({
-              id: doc.id, // Add the document ID here
               ...doc.data(), // Merge the document fields (data) into the product
             }));
 

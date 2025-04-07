@@ -1,13 +1,16 @@
+import {Timestamp} from "firebase/firestore";
+
 export interface Order {
-    id?: number;
+    orderId?: number;
     tracking?: string;
     amount?: number;
     deliverCharges?: number;
-    createdAt?: Date|undefined;
+    createdAt?: Timestamp|undefined;
     orderItems?: OrderItem[];
     status?: string;
     itemCount?: number;
     createdUserId?: string;
+    name?: string;
     address?: string;
     contact1?: string;
     contact2?: string;

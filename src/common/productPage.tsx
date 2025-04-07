@@ -452,7 +452,7 @@ const ProductPage: React.FC = () => {
 
           if (!itemExists) {
             const newCartItem:CartItem= {
-              id: product.id,
+              productId: product.id,
               genaratedCode: product.genaratedCode,
               itemCode: product.itemCode,
               quantity: items,

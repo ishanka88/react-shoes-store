@@ -25,7 +25,7 @@ import{db} from "../firebase/firebaseConfig"
 
 import { UserCartDetails } from "../services/UserCartDetails";
 import {useProductData} from "../context/DataContext"
-import { CartItem } from "../models/CartItem";
+import { CartItem , ModifiedCartItem} from "../models/CartItem";
 
 import CheckoutForm from './elements/checkoutForm'; // Import the CheckoutForm component
 
@@ -35,32 +35,6 @@ import { PenLine, Save } from "lucide-react";
 
 import { Order ,OrderItem} from "../models/Order";
 import { it } from "node:test";
-
-// interface CartItem {
-//   id: number;
-//   productId:string;
-//   name: string;
-//   image: string;
-//   sizes: { [key: number]: number };
-//   quantity: number;
-//   price: number;
-//   selected: boolean;
-// }
-
-interface ModifiedCartItem {
-  id: number;
-  productId:string;
-  title: string;
-  itemCode:string;
-  mainImage: string;
-  selectedSizes: { [key: number]: number };
-  availableSizes: { [key: number]: number };
-  quantity: number;
-  price: number;
-  discount:number;
-  selected: boolean;
-  stock:number;
-}
 
 
 const ShoppingCart: React.FC = () => {
@@ -76,7 +50,8 @@ const ShoppingCart: React.FC = () => {
 
   const [saveButton, setSaveButton] = useState(true);
 
-  const [isCartAvailable, setIsCartAvailable] = useState(false);
+  const [isCartAvailable, setIsCartAvailable] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
 
   const [selectedTotalPairs, setSelectedTotalPairs] = useState(0);
@@ -89,13 +64,11 @@ const ShoppingCart: React.FC = () => {
   const [newOrder, setNewOrder] = useState<Order>();
 
 
-  useEffect(() => {
-    if(cart){
-      setIsCartAvailable(true)
-    }
 
-  },[cart])
   
+  useEffect(() => {
+
+  },[loading,cart])
 
   useEffect(() => {
     const loadCartData = async () => {
@@ -104,13 +77,14 @@ const ShoppingCart: React.FC = () => {
         if (Array.isArray(originalCart) && originalCart.length > 0) {
           // Set the cart data from database
           setCartListFromDatabase(originalCart);
+          setIsCartAvailable(true)
 
           const modifiedCartItemList: ModifiedCartItem[] = [];
           let isStockMismatchDetected = false; // Flag to track any stock mismatch
 
           originalCart.forEach((item, index) => {
-            if (item.id) {
-              const product = findProductById(item.id);
+            if (item.productId) {
+              const product = findProductById(item.productId);
 
               if (product && product.sizes) {
                 const updatedSelectedSizesArray = Object.keys(product.sizes).reduce((acc, size) => {
@@ -137,7 +111,7 @@ const ShoppingCart: React.FC = () => {
 
                 const modifiedCartItem: ModifiedCartItem = {
                   id: index + 1, // Use index+1 for unique item IDs (starting from 1)
-                  productId: item.id,
+                  productId: item.productId,
                   title: product.name || "",
                   itemCode: item.itemCode || "",
                   mainImage: product.mainImages[0],
@@ -153,7 +127,7 @@ const ShoppingCart: React.FC = () => {
                 modifiedCartItemList.push(modifiedCartItem);
               }
             } else {
-              console.warn(`Product with id ${item.id} not found.`);
+              console.warn(`Product with id ${item.productId} not found.`);
             }
           });
 
@@ -163,10 +137,13 @@ const ShoppingCart: React.FC = () => {
 
           setCart(modifiedCartItemList);
         } else {
+          setIsCartAvailable(false)
           console.warn("Invalid cart format or empty cart");
         }
       } catch (error) {
         console.error("Error parsing cart data:", error);
+      }finally{
+        setIsLoading(false)
       }
     };
     loadCartData();
@@ -369,7 +346,7 @@ const ShoppingCart: React.FC = () => {
     
     // Remove from cartListFromDatabase by matching productId (make sure productId is used in cartListFromDatabase)
     setCartListFromDatabase(prevCartList =>
-      prevCartList.filter(item => item.id !== productId) // productId should match the field used in cartListFromDatabase
+      prevCartList.filter(item => item.productId !== productId) // productId should match the field used in cartListFromDatabase
     );
     
     // Remove from cart by matching id
@@ -385,10 +362,11 @@ const ShoppingCart: React.FC = () => {
   
 
   // Helper function to update the cart list with the updated sizes and quantities
-  const updateCartWithNewSizes = (cartListFromDatabase: any[], cart: any[]) => {
+  const updateCartWithNewSizes = (cartListFromDatabase: CartItem[], cart: ModifiedCartItem[]) => {
     return cartListFromDatabase.map((item1) => {
       // Find the matching item in the cart array
-      const matchingItem = cart.find((item2) => item1.id === item2.productId);
+      const matchingItem = cart.find((item2) => item1.productId === item2.productId);
+
 
       // If a match is found, update the sizes and quantities
       if (matchingItem) {
@@ -759,7 +737,8 @@ const ShoppingCart: React.FC = () => {
                                               }
                                           </div>
                                           ):(
-                                            <div className="d-flex justify-content-center" style={{padding: "80px" , fontWeight:"bold"}}> <span> Loading ... !</span></div>
+
+                                            <div className="d-flex justify-content-center" style={{padding: "80px" , fontWeight:"bold"}}> <span> Cart is empty !</span></div>
                                           )
                                         }
 
@@ -805,7 +784,7 @@ const ShoppingCart: React.FC = () => {
                                           />
                                           <span>Check out</span>
                                         </button>
-                                        <CheckoutForm newOrder={newOrder}  isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)}  />
+                                        <CheckoutForm newOrder={newOrder}  isOpen={modalOpen} toggle={() => setModalOpen(!modalOpen)} cartListFromDatabase={cartListFromDatabase} cart={cart}  />
                                         
                                                                             
                                         <div className ="protected-section">

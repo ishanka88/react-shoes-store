@@ -13,6 +13,9 @@ import {
 import './checkoutForm.css';
 import { Order,OrderItem } from "../../models/Order";
 import { placeNewOrder } from "../../firebase/placeNewOrder";
+import { } from "./cartElement";
+import { CartItem,ModifiedCartItem } from "../../models/CartItem";
+import { UserCartDetails } from "../../services/UserCartDetails";
 
 // List of cities for auto-suggest
 const citiesList = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose"];
@@ -21,10 +24,14 @@ interface CheckoutModalProps {
   isOpen: boolean;
   toggle: () => void;
   newOrder: Order | undefined;
+  cartListFromDatabase: CartItem[];
+  cart : ModifiedCartItem[];
+
+
 
 }
 
-const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder  }) => {
+const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder, cartListFromDatabase , cart }) => {
 
   // States for form fields
   const [recipientName, setRecipientName] = useState<string>("");
@@ -35,6 +42,49 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder  
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({}); // To store error messages
   const [loading, setLoading] = useState<boolean>(false); // State for loading spinner
+
+
+  const saveCart = async () => {
+    // Step 1: Filter selected items from the cart
+    const boughtItems = cart.filter((item) => item.selected === true);
+  
+    // Ensure that boughtItemsIds only contains valid, non-undefined productIds
+    const boughtItemsIds = boughtItems
+      .map((item) => item.productId)
+      .filter((id): id is string => id !== undefined); // Only keep valid productId values (non-undefined)
+  
+    // Step 2: Early return if no items are selected
+    if (boughtItemsIds.length === 0) {
+      console.log("No items selected to save.");
+      alert("No items selected for saving.");
+      return; // Exit early if no items are selected
+    }
+  
+    try {
+      // Step 3: Filter the cartListFromDatabase to remove the selected items
+      const updatedCartListFromDatabase = cartListFromDatabase.filter(
+        (item) => item.productId && !boughtItemsIds.includes(item.productId)
+      );
+  
+      // Step 4: Send updated cart to the backend
+      const response = await UserCartDetails.addUserCartDetails(updatedCartListFromDatabase);
+  
+      // Step 5: Handle success or failure
+      if (response) {
+        console.log("Cart successfully saved!");
+        // You can update state or UI here after successful save (e.g., clearing the cart)
+      } else {
+        console.error("Failed to save updated cart. No response received.");
+        alert("Error saving updated cart.");
+      }
+    } catch (error) {
+      // Step 6: Catch and log any errors during the save operation
+      console.error("Error saving cart:", error);
+      alert("An error occurred while saving the updated cart.");
+    }
+  };
+  
+
 
   if (!isOpen) {
     return null;  // If modal isn't open, don't render the content
@@ -74,6 +124,7 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder  
 
     if (newOrder) {
       // Assign form fields to newOrder
+      newOrder.name = recipientName ?? "";
       newOrder.address = address ?? "";
       newOrder.city = city ?? "";
       newOrder.contact1 = contact1 ?? "";
@@ -88,11 +139,11 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder  
 
         if (response.success) {
           // Handle success (e.g., show success message)
-          alert("Order placed successfully!");
-                    // Assuming the checkout was successful, call the onSubmit callback
-  
-         
 
+          alert("Order placed successfully!");
+          // Assuming the checkout was successful, call the onSubmit callback
+          saveCart()
+          window.location.reload();
 
         } else {
           if ('error' in response) {
