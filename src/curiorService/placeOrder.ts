@@ -1,3 +1,9 @@
+import {  doc, getDoc,  updateDoc} from "firebase/firestore";
+import { SYSTEM} from "../dbUtils";
+import { db } from "../firebase/firebaseConfig";
+import { waybillErrorMessages , WaybillErrorCode} from "../utils/waybillErrors";
+
+
 interface PostData {
     api_key: string;
     client_id: string;
@@ -13,31 +19,62 @@ interface PostData {
     amount: string;
     exchange: string;
   }
+
+
   
-  const makeFetchRequest = async (url: string, postData: PostData): Promise<any> => {
+  const makeFetchRequest = async (
+    url: string,
+    postData: PostData
+  ): Promise<any> => {
     try {
-      // Make the POST request using the Fetch API
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', // or 'application/json' if your API expects JSON
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams(postData as any), // Converts object to query parameters
+        body: new URLSearchParams(postData as any),
       });
   
-      // Check if the response is ok (status code 200-299)
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+      const data = await response.json();
+  
+      const statusCode = parseInt(data.status, 10);
+      console.log(data)
+      const waybill_id = data.waybillID?.toString(); 
+
+      if (isNaN(statusCode)) {
+        throw new Error("Invalid status code in API response.");
       }
   
-      // Parse the response as JSON or text depending on the API response format
-      const data = await response.text(); // Use `.json()` if the response is JSON
-      return data;
+      if (statusCode === 200) {
+        const systemRef = doc(db, SYSTEM, "order_counter");
+        const systemDoc = await getDoc(systemRef);
+  
+        if (systemDoc.exists()) {
+          await updateDoc(systemRef, { currentTracking: parseInt(postData.waybill_id) });
+          console.log('API Response:', response);
+          alert(`Successfully placed the order \n Waybil No : ${waybill_id}`)
+        } else {
+          console.warn("Order placed, but Firestore tracking values not found.");
+          alert("Order placed successfully, but failed to update tracking in database.");
+        }
+
+        return true;
+      } else {
+          const errorCode = statusCode as WaybillErrorCode;
+          const errorMessage = waybillErrorMessages[errorCode] || "Unknown error occurred.";
+          console.error("Error response:", response);
+          alert(`Error [${errorCode}]: ${errorMessage}\nWaybil No : ${waybill_id} `);
+          return false;
+      }
+ 
     } catch (error) {
-      console.error("Error during fetch request:", error);
-      throw error;
+      console.error("Fetch request failed:", error);
+      alert("Something went wrong while processing your request.");
+      return false;
     }
   };
+  
+
   
   // Public function to call the API with dynamic data
   export const sendParcelData = async (

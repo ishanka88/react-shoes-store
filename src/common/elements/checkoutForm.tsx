@@ -16,9 +16,8 @@ import { placeNewOrder } from "../../firebase/placeNewOrder";
 import { } from "./cartElement";
 import { CartItem,ModifiedCartItem } from "../../models/CartItem";
 import { UserCartDetails } from "../../services/UserCartDetails";
+import {cities} from "../../utils/cities"
 
-// List of cities for auto-suggest
-const citiesList = ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio", "San Diego", "Dallas", "San Jose"];
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -307,7 +306,7 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder, 
               required
             >
               <option value="">Select a city</option>
-              {citiesList.map((cityOption, index) => (
+              {cities.map((cityOption, index) => (
                 <option key={index} value={cityOption}>
                   {cityOption}
                 </option>

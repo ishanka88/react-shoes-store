@@ -8,7 +8,8 @@ export enum RouteName {
   PRODUCTS = "/products",
   ADD_PRODUCTS = "/add-products",
   ORDERS = "/orders",
+  ADDNEWORDER= "/add-new-order",
   ABOUT = "/about",
   DASHBOARD = "/dashboard",
-  PRODUCT_PAGE = "/product_details",
+  PRODUCT_PAGE = "/product-details",
 }

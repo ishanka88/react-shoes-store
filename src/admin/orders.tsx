@@ -14,49 +14,19 @@ import { ORDERS, PRODUCTS,SYSTEM} from "../dbUtils";
 import{db} from "../firebase/firebaseConfig"
 import "./orders.css"
 import { sendParcelData } from "../curiorService/placeOrder";
+import { CANCELLED, DELIVERED, DISPATCHED, NEW_ORDER, RESCHEDULE, RETURN, WAITING } from "../utils/parcelsStatus";
+import { updateOrderStatus ,updateOrderStatusAndTrackingNo} from "../services/UpdateOrderDetails";
+
 
 
 const classNames = require("classnames");
 
 
-// const fetchProducts = async () => {
-//     setLoading(true);
-//     try {
-//         let status;
-//         if (verticalActiveTabWithIcon == "1") {
-//             status = 'pending'
-//         }
-//         if (verticalActiveTabWithIcon == "2") {
-//             status = 'waiting'
-//         }
-//         if (verticalActiveTabWithIcon == "4") {
-//             status = 'shipped'
-//         }
-//         if (verticalActiveTabWithIcon == "5") {
-//             status = 'delivered'
-//         }
-//         if (verticalActiveTabWithIcon == "6") {
-//             status = 'cancelled'
-//         }
 
-//         const shoeProductsQuery = query(collection(db, 'Orders'), where('status', '==', status));
-//         const fetchedProducts: Order[] = [];
-//         // Fetching the filtered products
-//         const shoeProductsSnapshot = await getDocs(shoeProductsQuery);
-
-//         for (const doc of shoeProductsSnapshot.docs) {
-//             const productData = doc.data();
-//             fetchedProducts.push(productData );
-//         }
-//         setLoading(false);
-//         setOrders(fetchedProducts);
-//     } catch (error) {
-//         console.error('Error fetching products:', error);
-//     }
-// };
-
-
-
+interface UserWithOrders {
+    userId: string;
+    orderIds: number[];
+  }
 
 
 const Orders: React.FC = () => {
@@ -70,26 +40,115 @@ const Orders: React.FC = () => {
     const [customDate, setCustomDate] = useState<string>(''); // For custom date input
     const [startDate, setStartDate] = useState<Date>(new Date());
 
+    const [multipleOrders, setMultipleOrders] = useState<UserWithOrders[]>([]);
+
+
     const [statusCounts, setStatusCounts] = useState<{ [key: string]: number }>({
         newOrder: 0,
         waiting: 0,
         dispatched: 0,
-        resheduled: 0,
+        reschedule: 0,
         completed: 0,
-        returned: 0,
+        return: 0,
         cancelled: 0,
       });
+    
+    const statusKeyMap: { [key: string]: keyof typeof statusCounts } = {
+        'New Order': 'newOrder',
+      
+        'Waiting': 'waiting',
+      
+        'Dispatched': 'dispatched',
+        'Processing': 'dispatched',
+        'Pickup': 'dispatched',
+        'Transfer': 'dispatched',
+        'Data Changed': 'dispatched',
+        'Hold': 'dispatched',
+      
+        'Reschedule': 'reschedule',
+        'Rearrange': 'reschedule',
+      
+        'Return': 'return',
+        'Return Pending': 'return',
+        'Return Transfer': 'return',
+        'Return Complete': 'return',
+        'Damaged': 'return',
+      
+        'Delivered': 'completed',
+      
+        'Cancelled': 'cancelled',
+    };
+
+    // Define the valid order statuses
+    type OrderStatus = 
+    | 'New Order'
+    | 'Waiting'
+    | 'Dispatched'
+    | 'Processing'
+    | 'Pickup'
+    | 'Transfer'
+    | 'Data Changed'
+    | 'Hold'
+    | 'Reschedule'
+    | 'Rearrange'
+    | 'Return'
+    | 'Return Pending'
+    | 'Return Transfer'
+    | 'Return Complete'
+    | 'Damaged'
+    | 'Delivered'
+    | 'Cancelled';
+
+    // Define the valid group keys (used for UI categories)
+    type GroupKey = 
+    | 'New Order'
+    | 'Waiting'
+    | 'Dispatched'
+    | 'Reschedule'
+    | 'Return'
+    | 'Delivered'
+    | 'Cancelled';
+
+
+    // Status to Group mapping
+    const statusGroups: Record<OrderStatus, GroupKey> = {
+        'New Order': 'New Order',
+
+        'Waiting': 'Waiting',
+
+        'Dispatched': 'Dispatched',
+        'Processing': 'Dispatched',
+        'Pickup': 'Dispatched',
+        'Transfer': 'Dispatched',
+        'Data Changed': 'Dispatched',
+        'Hold': 'Dispatched',
+
+        'Reschedule': 'Reschedule',
+        'Rearrange': 'Reschedule',
+
+        'Return': 'Return',
+        'Return Pending': 'Return',
+        'Return Transfer': 'Return',
+        'Return Complete': 'Return',
+        'Damaged': 'Return',
+
+        'Delivered': 'Delivered',
+        'Cancelled': 'Cancelled',
+    };
+  
+
+      
       
 
     // Tab data (for easy iteration)
     const tabData = [
-        { id: "1", label: "NewOrders", status:"newOrder", count: statusCounts.newOrder || 0, color: "blue" },
-        { id: "2", label: "Waiting", status:"waiting", count: statusCounts.waiting || 0, color: "green" },
-        { id: "3", label: "Dispatched",status:"dispatched",  count: statusCounts.dispatched || 0, color: "green" },
-        { id: "4", label: "Resheduled",status:"resheduled",  count: statusCounts.resheduled || 0, color: "red" },
-        { id: "5", label: "Completed", status:"completed", count: statusCounts.completed || 0, color: "green" },
-        { id: "6", label: "Returned", status:"returned", count: statusCounts.returned || 0, color: "red" },
-        { id: "7", label: "Cancelled", status:"cancelled",  count: statusCounts.cancelled || 0, color: "green" },
+        { id: "1", label: "New Order", status:NEW_ORDER, count: statusCounts.newOrder || 0, color: "blue" },
+        { id: "2", label: "Waiting", status:WAITING, count: statusCounts.waiting || 0, color: "green" },
+        { id: "3", label: "Dispatched",status:DISPATCHED,  count: statusCounts.dispatched || 0, color: "green" },
+        { id: "4", label: "Reshedule",status:RESCHEDULE,  count: statusCounts.reschedule || 0, color: "red" },
+        { id: "5", label: "Completed", status:DELIVERED, count: statusCounts.completed || 0, color: "green" },
+        { id: "6", label: "Return", status:RETURN, count: statusCounts.return|| 0, color: "red" },
+        { id: "7", label: "Cancelled", status:CANCELLED,  count: statusCounts.cancelled || 0, color: "green" },
     ];
 
 
@@ -160,17 +219,31 @@ const Orders: React.FC = () => {
 
     
 
-    // Calculate the count of each order status whenever orders are updated
     useEffect(() => {
-        const counts = orders.reduce((acc, order) => {
-            const status = order.status || 'unknown'; // Use 'unknown' if no status is provided
-            acc[status] = (acc[status] || 0) + 1;
-            return acc;
-        }, {} as { [key: string]: number }); // Make sure the accumulator is typed as an object with string keys
-
-        // Update the statusCounts state with the calculated counts
+        const counts: typeof statusCounts = {
+          newOrder: 0,
+          waiting: 0,
+          dispatched: 0,
+          reschedule: 0,
+          completed: 0,
+          return: 0,
+          cancelled: 0,
+        };
+      
+        orders.forEach(order => {
+          const rawStatus = order.status || 'unknown';
+          const key = statusKeyMap[rawStatus];
+      
+          if (key) {
+            counts[key]++;
+          }
+        });
+      
         setStatusCounts(counts);
-    }, [orders]); // This runs every time orders change
+        const usersWithMultipleOrders = getUsersWithMultipleOrders(orders);
+        setMultipleOrders(usersWithMultipleOrders); // Update the state
+      }, [orders]);
+      
 
     
     // Handle change in the predefined date option
@@ -183,56 +256,8 @@ const Orders: React.FC = () => {
     const handleCustomDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setCustomDate(event.target.value);
     };
-    
-    
-    // const updateOrderStatus = async (orderId: string, newStatus: string, targetUserId: string) => {
-    //     try {
-    //         if(orderId===""){
-    //             alert("Error - Order id is not found")
-    //             return
-    //         }
-    //         const orderRef = doc(db, 'Orders', orderId);
-    //         await updateDoc(orderRef, { status: newStatus });
 
-    //         const notificationData: Notification = {
-    //             createdAt: new Date(),
-    //             description: newStatus,
-    //             targetUserId: targetUserId,
-    //             isRead: false,
-    //             title: "Order",
-    //             type: 'order'
-    //         };
-    //         await addDoc(collection(db, 'Notifications'), notificationData);
-    //         Swal.fire({
-    //             icon: "success",
-    //             title: "Order status updated successfully!",
-    //             confirmButtonColor: "#FD7F00",
-    //         });
 
-    //         fetchProducts();
-    //     } catch (error) {
-    //         console.error('Error updating order status:', error);
-    //     }
-    // };
-
-    const updateOrderStatus = async (orderId: number, newStatus: string) => {
-        try {
-            // Get the reference to the specific order document in Firestore
-            const orderRef = doc(db, ORDERS, orderId.toString());
-    
-            // Update the status field of the order document
-            await updateDoc(orderRef, {
-                status: newStatus
-            });
-    
-            console.log(`Order ${orderId} status updated to ${newStatus}`); // Log after update
-    
-            return true; // Return true after successful update
-        } catch (error) {
-            console.error("Error updating order status:", error);
-            return false; // Return false if an error occurs
-        }
-    };
 
     // Example of usage:
     const handleConfirmOrder = async (order:Order) => {
@@ -247,15 +272,15 @@ const Orders: React.FC = () => {
             try {
                 const systemRef = doc(db, SYSTEM, "order_counter");
                 const systemDoc = await getDoc(systemRef);
-                const lastOrderTracking = systemDoc.exists() ? systemDoc.data().currentTracking : 0;
-                const availableLastTracking = systemDoc.exists() ? systemDoc.data().lastTracking : 0;
+                const lastOrderTracking = systemDoc.exists() ? systemDoc.data().lastOrderTracking : 0;
+                const finalTracking = systemDoc.exists() ? systemDoc.data().finalTracking : 0;
 
-                if(lastOrderTracking===0 || availableLastTracking===0){
+                if(lastOrderTracking===0 || finalTracking===0){
                     alert("Error - Tracking numbers are zero")
                     return
                 }
                
-                if (lastOrderTracking >= availableLastTracking){
+                if (lastOrderTracking >= finalTracking){
                     alert("Error - Tracking numbers are exeed the limit")
                     return
                 }else{
@@ -279,7 +304,7 @@ const Orders: React.FC = () => {
                 if (item.sizes) {
                     
                     for (const [size, qty] of Object.entries(item.sizes)) {
-                        const itemDetails = `${description? "|":""}${item.itemCode}-Size ${size}${qty>1? `(${qty})`:""}`
+                        const itemDetails = `${description? ", ":""}${item.itemCode}-Size ${size}${qty>1? `(${qty})`:""}`
                         description +=itemDetails
                     }
                 }
@@ -312,29 +337,42 @@ const Orders: React.FC = () => {
               };
 
               console.log(parcelData)
-            //   sendParcelData(
-            //     parcelData.waybill_id,
-            //     parcelData.order_id,
-            //     parcelData.parcel_weight,
-            //     parcelData.parcel_description,
-            //     parcelData.recipient_name,
-            //     parcelData.recipient_contact_1,
-            //     parcelData.recipient_contact_2,
-            //     parcelData.recipient_address,
-            //     parcelData.recipient_city,
-            //     parcelData.amount,
-            //     parcelData.exchange
-            //   )
-            //     .then(response => {
-            //         alert(`API Response:': ${response}`)
-            //         console.log('API Response:', response);
-            //     })
-            //     .catch(error => {  
-            //       alert(`Error:': ${error}`)
-            //       console.error('Error:', error);
-            //     });
+
+              const responce = await sendParcelData(
+                parcelData.waybill_id,
+                parcelData.order_id,
+                parcelData.parcel_weight,
+                parcelData.parcel_description,
+                parcelData.recipient_name,
+                parcelData.recipient_contact_1,
+                parcelData.recipient_contact_2,
+                parcelData.recipient_address,
+                parcelData.recipient_city,
+                parcelData.amount,
+                parcelData.exchange
+              )
+
+              if (responce) {
+                 const statusChanged =updateOrderStatusAndTrackingNo (order.orderId,WAITING,newOrderTracking.toString())
+                 .toString()
+                if(! statusChanged){
+                    alert(" Error : Parcel Status did not changed to \"WAITING\" !\n but order is successfully placed");
+                }else{
+                    setOrders((prevOrders) =>
+                        prevOrders.map((o) =>
+                            o.orderId === order.orderId ? { ...o, tracking: "newOrderTracking" } : o
+                        )
+                    );
+                }
+
+                // Any other success actions (e.g., reset form, navigate, etc.)
+              } else {
+                console.warn("Parcel sending failed.");
+                // Optional: UI response or fallback
+              }
+
         } else {
-            // User canceled the action
+            // User cancelled the action
             console.log("Order not added.");
         }
     };
@@ -402,7 +440,7 @@ const Orders: React.FC = () => {
                 if (order.orderId){
                     const orderId = order.orderId
                     // Await the response from the async updateOrderStatus function
-                    const response = await updateOrderStatus(orderId, "cancelled");
+                    const response = await updateOrderStatus(orderId, CANCELLED);
                     // Get the order reference and delete the order
                             // Check if the response is true (success)
                     if (!response) {
@@ -412,7 +450,7 @@ const Orders: React.FC = () => {
                     // Update the local state with the new order status
                     setOrders((prevOrders) =>
                         prevOrders.map((o) =>
-                            o.orderId === orderId ? { ...o, status: "cancelled" } : o
+                            o.orderId === orderId ? { ...o, status: CANCELLED } : o
                         )
                     );
 
@@ -441,16 +479,45 @@ const Orders: React.FC = () => {
     };
 
 
+    // Function to find users with multiple orders and their order IDs
+    const getUsersWithMultipleOrders = (orders: Order[]): UserWithOrders[] => {
+        const userOrderMap = new Map<string, number[]>();
+      
+        // Filter and group orders that have NEW_ORDER status
+        for (const order of orders) {
+          if (
+            order.status === NEW_ORDER &&
+            order.createdUserId &&
+            typeof order.orderId === 'number'
+          ) {
+            const { createdUserId, orderId } = order;
+      
+            if (!userOrderMap.has(createdUserId)) {
+              userOrderMap.set(createdUserId, []);
+            }
+      
+            userOrderMap.get(createdUserId)!.push(orderId);
+          }
+        }
+      
+        // Extract users with more than one NEW_ORDER
+        return Array.from(userOrderMap.entries())
+          .filter(([, orderIds]) => orderIds.length > 1)
+          .map(([userId, orderIds]) => ({ userId, orderIds }));
+      };
+
+
     
 
     const TabPaneContent = ({ tabId, label, color, orders, status }: { tabId: string, label: string, color: string, orders: Order[], status: string }) => (
         <TabPane tabId={tabId}>
             <div className="row">
-                {statusCounts[status] > 0 ? (
+                {statusCounts[statusKeyMap[status]] > 0 ? (
                     <div className="table-responsive">
                         <table className="table cart-table">
                             <thead>
                                 <tr>
+                                    {multipleOrders.length>0 && status ===NEW_ORDER? <th scope="col">Same User</th>: ""}
                                     <th scope="col">OrderId</th>
                                     <th scope="col">Tracking</th>
                                     <th scope="col">Items</th>
@@ -460,7 +527,7 @@ const Orders: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {orders.filter(order => order.status === status).map(order => (
+                                {orders.filter(order => statusGroups[order.status as OrderStatus] === status).map(order => (
                                     <tr key={order.orderId}>
                                         <td>{order.orderId?.toString()}</td>
                                         <td>{order.tracking?.toString()|| "N/A"}</td>
@@ -510,7 +577,7 @@ const Orders: React.FC = () => {
                                             </div>
                                         </td>
                                         <td>
-                                            {status ==="newOrder"? (
+                                            {status ===NEW_ORDER? (
                                                 <div >
                                                     <button type="submit" className="custom-confirm-button" onClick={() => handleConfirmOrder(order)} >
                                                         <span>Confirm</span>

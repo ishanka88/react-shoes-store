@@ -1,0 +1,66 @@
+/* Required field styling */
+.required {
+    color: red;
+    font-size: 0.875rem;
+    font-weight: bold; /* Emphasize the red label */
+  }
+  
+  /* Margin for spacing between form elements */
+  .margin-bottom {
+    margin-bottom: 1rem;
+    display: block;
+  }
+  
+  /* Dropdown list styling */
+  .dropdown-list {
+    position: absolute;
+    z-index: 10;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #fff;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 5px 0;
+    cursor: pointer;
+  }
+  
+  .dropdown-list:hover {
+    background-color: #f1f1f1; /* Light background on hover */
+  }
+  
+  /* Small button styling */
+  button.btn-sm {
+    padding: 10px 15px;
+    font-size: 0.85rem;
+    border-radius: 4px; /* Soft rounded corners */
+    transition: all 0s ease;
+
+  }
+  
+  button.btn-sm:hover {
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+  }
+  
+  button.btn-sm:focus {
+    outline: none;
+    box-shadow: 0px 0px 5px rgba(0, 123, 255, 0.5);
+  }
+  
+  .container {
+    max-width: 70%;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  @media (max-width: 1024px) {
+    .container {
+      max-width: 95%;
+    }
+  }
+
+  .item-selection {
+    display: flex;
+    gap: 25px;
+  }

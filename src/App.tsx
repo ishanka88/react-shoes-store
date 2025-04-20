@@ -39,6 +39,7 @@ import {auth} from "./firebase/firebaseConfig"
 import { UserDetails } from './services/UserDetails';
 import { DataProvider } from './context/DataContext';
 import { ORDERS } from "./dbUtils";
+import AddNewOrder from "./admin/addNewOrder";
 
 
 
@@ -98,6 +99,7 @@ const App: React.FC = () => {
             <>
               <AdminHeader />
               <Switch>
+                <Route path={RouteName.ADDNEWORDER} component={AddNewOrder} />
                 <Route path={RouteName.ORDERS} component={Orders} />
                 <Route path={RouteName.ADD_PRODUCTS} component={AddProducts} />
                 <Route path={RouteName.CONTACT} component={ContactData} />

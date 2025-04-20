@@ -2,8 +2,9 @@ import { getFirestore, doc, runTransaction ,Timestamp} from "firebase/firestore"
 import { Order } from "../models/Order";
 import { Product } from "../models/Products";
 import { ORDERS,SYSTEM , PRODUCTS} from "../dbUtils";
+import { db } from "./firebaseConfig";
+import { NEW_ORDER } from "../utils/parcelsStatus";
 
-const db = getFirestore();
 
 export async function placeNewOrder(order: Order) {
   const systemRef = doc(db, SYSTEM, "order_counter");
@@ -57,16 +58,7 @@ export async function placeNewOrder(order: Order) {
 
       // 3. Determine the new order ID after all reads are done
       const lastOrderId = systemDoc.exists() ? systemDoc.data().lastOrderId : 1000;
-      const lastOrderTracking = systemDoc.exists() ? systemDoc.data().currentTracking : 0;
-      const availableLastTracking = systemDoc.exists() ? systemDoc.data().lastTracking : 0;
       const newOrderId = lastOrderId + 1;
-
-      let newOrderTracking=0
-      if (lastOrderTracking >= availableLastTracking){
-        newOrderTracking = 0;
-      }else{
-        newOrderTracking = lastOrderTracking + 1;
-      }
 
       
       const orderRef = doc(db, ORDERS, `${newOrderId}`);
@@ -79,10 +71,8 @@ export async function placeNewOrder(order: Order) {
       // 4. Update the system document (set or update based on existence)
       if (!systemDoc.exists()) {
         transaction.set(systemRef, { lastOrderId: newOrderId });
-        transaction.set(systemRef, { currentTracking: newOrderTracking });
       } else {
         transaction.update(systemRef, { lastOrderId: newOrderId });
-        transaction.update(systemRef, { currentTracking: newOrderTracking });
       }
 
       // 5. Create the new order document
@@ -90,7 +80,7 @@ export async function placeNewOrder(order: Order) {
         ...order,
         orderId: newOrderId,
         createdAt:  Timestamp.fromDate(new Date()),
-        status: "newOrder",
+        status: NEW_ORDER,
       });
 
       // 6. Update product stock levels
