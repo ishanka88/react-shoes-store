@@ -3,12 +3,12 @@ import {Timestamp} from "firebase/firestore";
 export interface Order {
     orderId?: number;
     tracking?: string;
-    amount?: number;
-    deliverCharges?: number;
+    fromWebsite?: boolean; // website-true, others - false
+    fullAmount?: number;
+    deliverCharges?: number; // this is addded to the amount
     createdAt?: Timestamp|undefined;
     orderItems?: OrderItem[];
     status?: string;
-    itemCount?: number;
     createdUserId?: string;
     name?: string;
     address?: string;
@@ -18,14 +18,13 @@ export interface Order {
     paymentMethod?: string;
 }
 export interface OrderItem {
-    id?: number;
+    id: number;
     productId?:string;
-    itemCode?: string;
-    mainImage?: string;
+    itemCode: string;
     title?:string;
     price?: number;
     discount?: number;
-    quantity?: number,
+    quantity: number,
     sizes?: { [size: number]: number }; 
     // Other properties of an order item
 }

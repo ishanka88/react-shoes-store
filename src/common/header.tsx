@@ -141,7 +141,7 @@ const loadCartData = async () => {
           // Handle case when product is not found
           if (product) {
             const cartItem: DisplayCartItem = {
-              id: product.id,
+              id: product.productId,
               title: product.name,
               mainImage: product.mainImages[0], // Assuming the main image is at index 0
               category: product.category,
@@ -171,7 +171,7 @@ const loadCartData = async () => {
 // Function to find a product by its ID
 const findProductById = (id: string): Product | undefined => {
   // Find the product in the product list by ID
-  const product = productsList.find((product) => product.id === id);
+  const product = productsList.find((product) => product.productId === id);
   return product; // This can be undefined if not found
 };
 

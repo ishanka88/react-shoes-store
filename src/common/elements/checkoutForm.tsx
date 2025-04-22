@@ -17,6 +17,7 @@ import { } from "./cartElement";
 import { CartItem,ModifiedCartItem } from "../../models/CartItem";
 import { UserCartDetails } from "../../services/UserCartDetails";
 import {cities} from "../../utils/cities"
+import { useProductData } from "../../context/DataContext";
 
 
 interface CheckoutModalProps {
@@ -41,6 +42,8 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder, 
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({}); // To store error messages
   const [loading, setLoading] = useState<boolean>(false); // State for loading spinner
+  const { productsList  } = useProductData();
+
 
 
   const saveCart = async () => {
@@ -134,7 +137,7 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder, 
 
       try {
         // Place the new order and handle response
-        const response = await placeNewOrder(newOrder);
+        const response = await placeNewOrder(newOrder,true);
 
         if (response.success) {
           // Handle success (e.g., show success message)
@@ -189,7 +192,7 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder, 
                     <div className="d-flex" style={{padding:"0px 20px 0px 0px"}} >{index + 1}</div>
                     <div className="cart-item-col1">
                         <div>
-                             <img src={item.mainImage} className="thumbnail-image" style={{borderRadius:"5px"}} />
+                             <img src={productsList.find( listItem => listItem.itemCode === item.itemCode)?.mainImages[0]} className="thumbnail-image" style={{borderRadius:"5px"}} />
                         </div>
                     </div>
                    
@@ -227,7 +230,7 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder, 
                     Subtotal
                 </div>
                 <div>
-                    Rs {(newOrder?.amount||0).toLocaleString(undefined, { 
+                    Rs {(newOrder?.fullAmount||0).toLocaleString(undefined, { 
                                 minimumFractionDigits: 0, 
                                 maximumFractionDigits: 0 })}
                 </div>
@@ -252,7 +255,7 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder, 
                     Total
                 </div>
                 <div>
-                    Rs {((newOrder?.amount || 0) + (newOrder?.deliverCharges || 0)).toLocaleString(undefined, { 
+                    Rs {((newOrder?.fullAmount || 0) + (newOrder?.deliverCharges || 0)).toLocaleString(undefined, { 
                     minimumFractionDigits: 0, 
                     maximumFractionDigits: 0 })}
 

@@ -264,7 +264,7 @@ const Main: React.FC = () => {
                                     {productsList.length > 0 ? (
                                         <>
                                         {productsList.map((product, index) => (
-                                            <div className="col-lg-4 col-md-6 col-sm-6" key={product.id}>
+                                            <div className="col-lg-4 col-md-6 col-sm-6" key={product.productId}>
                                             <div
                                                 className="single-new-arrival mb-50 text-center"
                                                 style={{
@@ -277,7 +277,7 @@ const Main: React.FC = () => {
                                                 cursor: 'pointer'
                                                 }}
                                                 onClick={() => {
-                                                window.open(`product_details?id=${product.id}`);
+                                                window.open(`product_details?id=${product.productId}`);
                                                 }}
                                             >
                                                 <CustomCarousel

@@ -2,6 +2,7 @@ import {  doc, getDoc,  updateDoc} from "firebase/firestore";
 import { SYSTEM} from "../dbUtils";
 import { db } from "../firebase/firebaseConfig";
 import { waybillErrorMessages , WaybillErrorCode} from "../utils/waybillErrors";
+import { updateLastOrderTracking } from "../firebase/systemDocument";
 
 
 interface PostData {
@@ -46,18 +47,8 @@ interface PostData {
       }
   
       if (statusCode === 200) {
-        const systemRef = doc(db, SYSTEM, "order_counter");
-        const systemDoc = await getDoc(systemRef);
-  
-        if (systemDoc.exists()) {
-          await updateDoc(systemRef, { currentTracking: parseInt(postData.waybill_id) });
-          console.log('API Response:', response);
-          alert(`Successfully placed the order \n Waybil No : ${waybill_id}`)
-        } else {
-          console.warn("Order placed, but Firestore tracking values not found.");
-          alert("Order placed successfully, but failed to update tracking in database.");
-        }
-
+   
+        await updateLastOrderTracking (parseInt(postData.waybill_id))
         return true;
       } else {
           const errorCode = statusCode as WaybillErrorCode;

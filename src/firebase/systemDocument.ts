@@ -1,7 +1,48 @@
 import {  doc, getDoc,  updateDoc} from "firebase/firestore";
 import { SYSTEM} from "../dbUtils";
-import { db } from "../firebase/firebaseConfig";
+import { db } from "./firebaseConfig";
 import { waybillErrorMessages , WaybillErrorCode} from "../utils/waybillErrors";
+
+
+
+export async function getCurrentTracking(): Promise<number | null> {
+  try {
+    const systemRef = doc(db, SYSTEM, "order_counter");
+    const systemDoc = await getDoc(systemRef);
+
+    if (systemDoc.exists()) {
+      const data = systemDoc.data();
+      const lastTracking = data.lastTracking ?? null;
+
+      return lastTracking;
+    } else {
+      console.warn("Tracking document does not exist.");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error getting current tracking:", error);
+    return null;
+  }
+}
+
+export async function getLastManualOrderId(): Promise<number | null> {
+  try {
+    const systemRef = doc(db, SYSTEM, "order_counter");
+    const systemDoc = await getDoc(systemRef);
+
+    if (systemDoc.exists()) {
+      const data = systemDoc.data();
+      const lastOrderIdManual = data.lastOrderIdManual ?? null;
+      return lastOrderIdManual;
+    } else {
+      console.warn("Tracking document does not exist.");
+      return null;
+    }
+  } catch (error) {
+    console.error("Error getting current tracking:", error);
+    return null;
+  }
+}
 
 export async function updateLastOrderTracking(trackingNo: number): Promise<boolean> {
     try {

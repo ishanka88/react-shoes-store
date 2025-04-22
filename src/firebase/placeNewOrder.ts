@@ -6,7 +6,7 @@ import { db } from "./firebaseConfig";
 import { NEW_ORDER } from "../utils/parcelsStatus";
 
 
-export async function placeNewOrder(order: Order) {
+export async function placeNewOrder(order: Order , fromWebsite:boolean) {
   const systemRef = doc(db, SYSTEM, "order_counter");
 
   try {
@@ -55,10 +55,20 @@ export async function placeNewOrder(order: Order) {
         const availableStock = productData.stock -totalBuyQuantity
         stockUpdates.push({ productRef, productData ,updatedSizes, availableStock});
       }
-
+      
+      let newOrderId = 0;
       // 3. Determine the new order ID after all reads are done
-      const lastOrderId = systemDoc.exists() ? systemDoc.data().lastOrderId : 1000;
-      const newOrderId = lastOrderId + 1;
+      if(fromWebsite){
+        const lastOrderId = systemDoc.exists() ? systemDoc.data().lastOrderIdWebsite : 1000;
+        newOrderId = lastOrderId + 1;
+      }else{
+        if(order.orderId){
+          newOrderId = order.orderId;
+        }else{
+          const lastOrderId = systemDoc.exists() ? systemDoc.data().lastOrderIdManual : 1000;
+          newOrderId = lastOrderId + 1;
+        }
+      }
 
       
       const orderRef = doc(db, ORDERS, `${newOrderId}`);
@@ -69,10 +79,19 @@ export async function placeNewOrder(order: Order) {
       }
 
       // 4. Update the system document (set or update based on existence)
-      if (!systemDoc.exists()) {
-        transaction.set(systemRef, { lastOrderId: newOrderId });
-      } else {
-        transaction.update(systemRef, { lastOrderId: newOrderId });
+
+      if(fromWebsite){
+          if (!systemDoc.exists()) {
+            transaction.set(systemRef, { lastOrderIdWebsite: newOrderId });
+          } else {
+            transaction.update(systemRef, { lastOrderIdWebsite: newOrderId });
+          }
+      }else{
+          if (!systemDoc.exists()) {
+            transaction.set(systemRef, { lastOrderIdManual: newOrderId });
+          } else {
+            transaction.update(systemRef, { lastOrderIdManual: newOrderId });
+          }
       }
 
       // 5. Create the new order document
@@ -81,6 +100,7 @@ export async function placeNewOrder(order: Order) {
         orderId: newOrderId,
         createdAt:  Timestamp.fromDate(new Date()),
         status: NEW_ORDER,
+        fromWebsite:fromWebsite,
       });
 
       // 6. Update product stock levels

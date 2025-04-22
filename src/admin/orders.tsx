@@ -16,6 +16,7 @@ import "./orders.css"
 import { sendParcelData } from "../curiorService/placeOrder";
 import { CANCELLED, DELIVERED, DISPATCHED, NEW_ORDER, RESCHEDULE, RETURN, WAITING } from "../utils/parcelsStatus";
 import { updateOrderStatus ,updateOrderStatusAndTrackingNo} from "../services/UpdateOrderDetails";
+import { spawn } from "child_process";
 
 
 
@@ -264,7 +265,7 @@ const Orders: React.FC = () => {
         const confirmed = window.confirm("Are you sure, you want to ADD this order?");
 
         if (confirmed) {
-            if (!order.orderId || !order.orderItems||!order.name||!order.contact1||!order.city||!order.amount ||!order.address){
+            if (!order.orderId || !order.orderItems||!order.name||!order.contact1||!order.city||!order.fullAmount ||!order.address){
                 alert("Error - Invalid OrderId")
                 return
             }
@@ -332,7 +333,7 @@ const Orders: React.FC = () => {
                 recipient_contact_2: order.contact2 ||'',
                 recipient_address: order.address,
                 recipient_city: order.city,
-                amount: order.amount.toString(),
+                amount: order.fullAmount.toString(),
                 exchange: '0',
               };
 
@@ -487,7 +488,7 @@ const Orders: React.FC = () => {
         for (const order of orders) {
           if (
             order.status === NEW_ORDER &&
-            order.createdUserId &&
+            order.createdUserId && order.createdUserId!=="TACCO" &&
             typeof order.orderId === 'number'
           ) {
             const { createdUserId, orderId } = order;
@@ -506,6 +507,13 @@ const Orders: React.FC = () => {
           .map(([userId, orderIds]) => ({ userId, orderIds }));
       };
 
+    
+    const formatUserId = (id?: string | number) => {
+        if (!id) return '';
+        const str = id.toString();
+        return str.length > 8 ? `${str.slice(0, 4)}...${str.slice(-4)}` : str;
+    };
+
 
     
 
@@ -517,7 +525,7 @@ const Orders: React.FC = () => {
                         <table className="table cart-table">
                             <thead>
                                 <tr>
-                                    {multipleOrders.length>0 && status ===NEW_ORDER? <th scope="col">Same User</th>: ""}
+                                    {multipleOrders.length>0 && status ===NEW_ORDER? <th scope="col"style={{color:"red"}} >Same User</th>: ""}
                                     <th scope="col">OrderId</th>
                                     <th scope="col">Tracking</th>
                                     <th scope="col">Items</th>
@@ -529,8 +537,53 @@ const Orders: React.FC = () => {
                             <tbody>
                                 {orders.filter(order => statusGroups[order.status as OrderStatus] === status).map(order => (
                                     <tr key={order.orderId}>
-                                        <td>{order.orderId?.toString()}</td>
-                                        <td>{order.tracking?.toString()|| "N/A"}</td>
+                                        {(() => {
+                                            // Declare inside an IIFE (Immediately Invoked Function Expression)
+                                            if (multipleOrders.length > 0 && status === NEW_ORDER) {
+                                                const matched = multipleOrders.find(
+                                                    multiple => multiple.userId === order.createdUserId
+                                                );
+                                                if (matched) {
+                                                    return (
+                                                    <>
+                                                        <td style={{ color: "red" , fontWeight:"bold"}}>
+                                                            <div>
+                                                                {formatUserId(order.createdUserId)}
+                                                            </div>
+
+                                                            <div>
+                                                                {matched.orderIds.map((id, i) => (
+                                                                <div key={i} style={{color:"blue"}}>{id.toString()}</div>
+                                                                ))}
+                                                            </div>
+
+                                                        </td>
+
+                                                                                                        </>
+                                                    );
+                                                } else {
+                                                
+                                                    return (
+                                                    <>
+                                                        <td style={{ color: "green", fontWeight:"bold" }}>GENUINE</td>
+                                                        
+                                                    </>
+                                                    );
+                                                }
+                                            } 
+                                        })()}
+
+                                        <td> <strong>{order.orderId?.toString()}</strong></td>
+                                        <td>
+                                            <div>
+                                                <strong>{order.tracking?.toString()|| "N/A"}</strong>
+                                            </div>
+                                            <div>
+                                                <strong style={{fontSize:"14px"}}>{order.fromWebsite? "Website":"Facebook"}</strong>
+                                            </div>
+                                        
+                                            
+                                        </td>
                                         <td>
                                             {order.orderItems?.map((item: OrderItem, itemIndex: number) => (
                                                 Object.entries(item.sizes || {}).map(([size, quantity], sizeIndex) => (
@@ -555,7 +608,7 @@ const Orders: React.FC = () => {
                                             ))}
                                         </td>
                                         <td>
-                                            Rs. {order.amount?.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                            <strong> Rs. {order.fullAmount?.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</strong> 
                                         </td>
                                         <td>
                                             <div>{order.name}</div>

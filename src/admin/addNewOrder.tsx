@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import React, { useState, ChangeEvent, FormEvent, useEffect , useRef} from "react";
 import "./addNewOrder.css";
 import {
   Form,
@@ -13,8 +13,20 @@ import {
 } from "reactstrap";
 import { cities } from "../utils/cities";
 
-import { useProductData } from '../context/DataContext';
+import { DataProvider, useProductData } from '../context/DataContext';
 import { Product } from "../models/Products";
+import { CartItem } from "../models/CartItem";
+import { Order, OrderItem } from "../models/Order";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { hover } from "framer-motion";
+import { Pointer } from "lucide-react";
+import { getLastManualOrderId } from "../firebase/systemDocument";
+import { Button, ToggleButton } from "react-bootstrap";
+import { each } from "jquery";
+import { DELIVERYCHARGE } from "../utils/deliveryCharge";
+import { NEW_ORDER } from "../utils/parcelsStatus";
+import { placeNewOrder } from "../firebase/placeNewOrder";
 
 type FormErrors = {
   contact1?: string;
@@ -43,15 +55,88 @@ const AddNewOrder: React.FC = () => {
     const [selectedItemCode, setSelectedItemCode] = useState<string>("");
 
 
-    const { productsList , loading } = useProductData();
+    const { productsList , loading,refetchProducts } = useProductData();
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
     const [selectedSize, setSelectedSize] = useState<number>(0);
     const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
+    const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+
+    const [orderId, setOrderId] = useState<number>(0);
+    const [total, setTotall] = useState(0);
+    const [subTotal, setSubTotall] = useState(0);
+    const [isFreeDeliverySelected, setIsFreeDeliverySelected] = useState<boolean>(false);
+
+
+    // Function to reset all form values to their default state
+    const resetForm = () => {
+        setRecipientName("");
+        setAddressLine1("");
+        setAddressLine2("");
+        setAddressLine3("");
+        setCity("");
+        setContact1("");
+        setContact2("");
+        setPaymentMethod("cash");
+        setErrors({});
+        setRawPasteText("");
+        setPastedList([]);
+        setFocusedField(null);
+        setSelectedSubCategory("");
+        setItemCodes([]);
+        setSelectedItemCode("");
+        setSelectedProduct(null);
+        setSelectedSize(0);
+        setSelectedQuantity(1);
+        setOrderItems([]);
+        setOrderId(0);
+        setTotall(0);
+        setSubTotall(0);
+        setIsFreeDeliverySelected(false);
+
+        fetchLastOrderId();
+        refetchProducts()
+    };
 
 
     // Regex for validating Sri Lankan contact numbers
     const phoneNumberRegex = /^(?:\+94|0)(71|72|75|76|77|78|79|11|21|22|23|24|25|26|27|28|29|31|32|33|34|35|36|37|38|39|41|42|43|44|45|46|47|48|49|51|52|53|54|55|56|57|58|59|61|62|63|64|65|66|67|68|69|81|82|83|84|85|86|87|88|89|91|92|93|94|95|96|97|98|99)\d{7}$/;
+
+
+    const fetchLastOrderId = async () => {
+        const lastOrderId = await getLastManualOrderId();
+        if (lastOrderId) {
+          setOrderId(lastOrderId+1)
+        }
+      };
+
+    useEffect(() => {
+        fetchLastOrderId();
+      }, []);
+    
+    useEffect(() => {
+        const subTotal = orderItems.reduce((acc, item) => {
+            const price = Number(item.price);
+            const discount = Number(item.discount);
+            const quantity = Number(item.quantity);
+            const subtotal = price * quantity * ((100 - discount) / 100);
+            return acc + subtotal;
+        }, 0);
+        
+        setSubTotall(subTotal);
+    }, [orderItems]);
+
+    useEffect(() => {
+        let deliverCharge = 0;
+        if(!isFreeDeliverySelected && orderItems.length >0){
+            deliverCharge = DELIVERYCHARGE
+        }
+        
+        setTotall(subTotal + deliverCharge);
+    }, [subTotal,isFreeDeliverySelected]);
+
+    
+      
 
     useEffect(() => {
         const lines = rawPasteText
@@ -89,18 +174,20 @@ const AddNewOrder: React.FC = () => {
     }, [selectedSubCategory]);
 
     useEffect(() => {
-        
+  
         if (selectedItemCode) {
             setSelectedSize(0)
             setSelectedQuantity(1)
-            const selectedProduct = productsList.find(
+            const updateSelectedProduct = productsList.find(
                 (product) => product.itemCode === selectedItemCode
             );
-        
-            if (selectedProduct) {
-                setSelectedProduct(selectedProduct); // Set as a single object, not an array
+
+            
+            if (updateSelectedProduct) {
+                setSelectedProduct(updateSelectedProduct); // Set as a single object, not an array
             }
         }
+
 
       }, [selectedItemCode]);
 
@@ -331,6 +418,106 @@ const AddNewOrder: React.FC = () => {
         setSelectedQuantity(value); // You "receive" the returned value here
       };
 
+    
+    const addOrderItem = () => {
+
+        if (!selectedProduct || !selectedSize || !selectedQuantity) return;
+      
+        setOrderItems(prev => {
+          const existingItemIndex = prev.findIndex(item => item.productId === selectedProduct.productId);
+      
+          if (existingItemIndex !== -1) {
+            const updatedItems = [...prev];
+            const existingItem = { ...updatedItems[existingItemIndex] };
+            
+            existingItem.quantity = (existingItem.quantity || 0) - (existingItem.sizes?.[selectedSize] || 0) + selectedQuantity;
+      
+            existingItem.sizes = {
+              ...existingItem.sizes,
+              [selectedSize]:  selectedQuantity,
+            };
+      
+      
+            updatedItems[existingItemIndex] = existingItem;
+            return updatedItems;
+        } else {
+            
+            const newItem: OrderItem = {
+              id: orderItems.length + 1,
+              productId: selectedProduct.productId,
+              itemCode: selectedProduct.itemCode || '',
+              price: selectedProduct.price ?? 0,
+              discount: selectedProduct.discount ?? 0,
+              quantity: selectedQuantity,
+              sizes: {
+                [selectedSize]: selectedQuantity,
+              },
+            };
+            return [...prev, newItem];
+          }
+        });
+    };
+
+    const removeOrderItem = (idToRemove: number) => {
+        setOrderItems(prevItems => prevItems.filter(item => item.id !== idToRemove));
+      };
+
+    const toggleFreeDelivery = () => {
+        setIsFreeDeliverySelected(!isFreeDeliverySelected);
+      };
+
+    const confirmOrder = async (e: FormEvent) => {
+        e.preventDefault();
+
+        const newOrder: Order = {
+            // Similarly, handle tracking logic
+            orderId: orderId,
+            tracking: "",
+            orderItems: orderItems,
+            fullAmount: total,
+            deliverCharges: isFreeDeliverySelected? DELIVERYCHARGE : 0,
+            createdUserId: "TACCO",
+            name : recipientName ?? "",
+            address : addressLine1 + (addressLine2 ? ", " + addressLine2 : "") + (addressLine3 ? ", " + addressLine3 + "." : "."),
+            city : city ?? "",
+            contact1 : contact1 ?? "",
+            contact2 : contact2 ?? "",
+            paymentMethod : paymentMethod ?? "",
+    
+        };
+        const isConfirmed = window.confirm("Are you sure?");
+        if (!isConfirmed) return; // If not confirmed, exit early
+
+        try {
+            // Place the new order and handle response
+            const response = await placeNewOrder(newOrder,false); // false- manuall orders
+
+            if (response.success) {
+                // Handle success (e.g., show success message)
+                alert("Order placed successfully!");
+                resetForm()
+
+            } else {
+                if ('error' in response) {
+                // This block is executed when `response` has the `error` property (i.e., the order failed)
+                alert(`Error placing order: ${response.error}`);
+                } else {
+                // This block is executed when `response` has the `orderId` property (i.e., the order was successful)
+                alert(`Order placed successfully! Your order ID is: ${response.orderId}`);
+                }
+            }
+        } catch (error) {
+            console.error("Error placing order:", error);
+            alert("An unexpected error occurred while placing your order.");
+
+
+      };
+    }
+     
+      
+
+      
+
   return (
     
     <Container className="container">
@@ -386,6 +573,77 @@ const AddNewOrder: React.FC = () => {
                     </div>
                     </FormGroup>
 
+                    <div className="d-flex justify-content-between">
+
+                        <div style={{padding:"0px 20px 10px 0px"}}>
+                            
+                            <Label for="orderId"><strong>Order ID</strong></Label>
+                            <Input
+                                type="number"
+                                id="exampleText"
+                                placeholder="Enter order ID..."
+                                value={orderId}
+                                min={1}
+                                step={1}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+
+                                    // Allow empty string (for clearing input), or positive integers only
+                                    if (value === "" || (/^\d+$/.test(value) && Number(value) > 0)) {
+                                    setOrderId(Number(value));
+                                    }
+                                }}
+                                style={{width:"100px", fontWeight:"bold"}}
+                            />
+                        </div>
+                        <div style={{paddingBottom:"10px"}}>
+                            
+                            <Label for="totall"><strong>Total Amount</strong></Label>
+                            <div className="d-flex align-items-center">
+                                <div><strong>Rs.&nbsp;</strong></div>
+
+                                <div>
+                                <Input
+                                    type="text"
+                                    id="totall"
+                                    placeholder="Enter total..."
+                                    value={total}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+
+                                        // Allow empty string or positive number with up to 2 decimal places
+                                        if (value === "" || /^\d+(\.\d{0,2})?$/.test(value)) {
+                                        setTotall(Number(value)); // keep as string for better input experience
+                                        }
+                                    }}
+                                    style={{ minWidth: "100px", fontWeight: "bold" }}
+                                    />
+
+                                </div>
+                            </div>
+             
+                        </div>
+
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center' ,padding:"10px 0px"}}>
+                        <Label for="freeDeliverySwitch" style={{ marginRight: '10px', color:"green", fontWeight:"bold", cursor:"pointer"}}>Free Delivery</Label>
+                        
+                        <Input
+                            type="switch"
+                            id="freeDeliverySwitch"
+                            name="freeDeliverySwitch"
+                            label={isFreeDeliverySelected ? 'YES' : 'NO'}
+                            checked={isFreeDeliverySelected}
+                            onChange={toggleFreeDelivery}
+                            style={{ cursor: 'pointer' }}
+                            inline
+                        />
+                        
+                        <span style={{ marginLeft: '10px' }}>
+                            {isFreeDeliverySelected ? <span style={{color:"Blue" , fontWeight:"bold"}}>YES</span> : <span style={{color:"red"}}>NO</span> }
+                        </span>
+                    </div>
+
                     <div className="">
                         <div className="item-selection ">
                             {/* Sub Category Dropdown */}
@@ -420,8 +678,9 @@ const AddNewOrder: React.FC = () => {
                                 <div>
                                 <select 
                                     id="item-code"
-                                    value={selectedItemCode}
                                     onChange={(e) => setSelectedItemCode(e.target.value)}
+                                    value={selectedItemCode}
+
                                     >
                                     <option value="">Item code</option>
                                     {itemCodes.map((code, index) => (
@@ -449,7 +708,7 @@ const AddNewOrder: React.FC = () => {
                                         <span>Qty : <QuantitySelector quantity={selectedQuantity} stock={selectedProduct?.sizes?.[selectedSize] || 0} onValueChange={handleQuantityValueChange}/></span>
                                     </div>
                                     <div>
-                                        <button className="btn btn-primary">
+                                        <button className="btn btn-primary" onClick={addOrderItem}>
                                             Add Item
                                         </button>
                                     </div>
@@ -477,6 +736,31 @@ const AddNewOrder: React.FC = () => {
                                 ))}
                             </div> */}
                         </div>
+                    </div>
+                    <div style={{marginTop:"20px"}}>
+                        {orderItems.map((item, index) => (
+                            <div key={item.id || index} style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}>
+
+                                <div className="d-flex justify-content-between">
+                                    <div>
+                                        <ul>
+                                            {Object.entries(item.sizes ?? {}).map(([size, qty]) => (
+                                            
+                                            <li key={size}>  
+                                                 <strong>{item.itemCode} </strong>Size {size} ( {qty} )
+                                            </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                    <div className="d-flex align-items-center ">
+                                        <FontAwesomeIcon color="red" cursor="pointer" icon={faTrash} onClick={() => removeOrderItem(item.id )}/>
+                                            
+                                        {/* <FaTrash className="d-flex align-items-center delete-button " onClick={() => removeItem(item.id)} /> */}
+                                    </div>
+                                </div>
+
+                            </div>
+                            ))}
                     </div>
 
 
@@ -561,6 +845,7 @@ const AddNewOrder: React.FC = () => {
                                     value={addressLine2}
                                     onFocus={() => setFocusedField("address2")}
                                     onChange={(e) => setAddressLine2(e.target.value)}
+                                    onBlur={() => setTimeout(() => setFocusedField(null), 150)}
                                     placeholder="Line 2"
                                     autoComplete="off"
                                 />
@@ -585,6 +870,7 @@ const AddNewOrder: React.FC = () => {
                                     value={addressLine3}
                                     onFocus={() => setFocusedField("address3")}
                                     onChange={(e) => setAddressLine3(e.target.value)}
+                                    onBlur={() => setTimeout(() => setFocusedField(null), 150)}
                                     placeholder="Line 3"
                                     autoComplete="off"
                                 />
@@ -672,6 +958,7 @@ const AddNewOrder: React.FC = () => {
                                 value={contact2}
                                 onFocus={() => setFocusedField("contact2")}
                                 onChange={(e) => setContact2(e.target.value)}
+                                onBlur={() => setTimeout(() => setFocusedField(null), 150)}
                                 placeholder="Enter number"
                                 invalid={!!errors.contact2}
                                 autoComplete="off"
@@ -712,18 +999,68 @@ const AddNewOrder: React.FC = () => {
                         </Input>
                     </FormGroup>
 
+                    <div style={{paddingBottom:"10px"}}>
+                            
+                            <Label for="totall"><strong>Total Amount</strong></Label>
+                            <div className="d-flex align-items-center">
+                                <div><strong>Rs.&nbsp;</strong></div>
+
+                                <div>
+                                <Input
+                                    type="text"
+                                    id="totall"
+                                    placeholder="Enter total..."
+                                    value={total}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+
+                                        // Allow empty string or positive number with up to 2 decimal places
+                                        if (value === "" || /^\d+(\.\d{0,2})?$/.test(value)) {
+                                        setTotall(Number(value)); // keep as string for better input experience
+                                        }
+                                    }}
+                                    style={{ minWidth: "100px", fontWeight: "bold" }}
+                                    />
+
+                                </div>
+                            </div>
+             
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center' ,padding:"10px 0px"}}>
+                        <Label for="freeDeliverySwitch" style={{ marginRight: '10px', color:"green", fontWeight:"bold", cursor:"pointer"}}>Free Delivery</Label>
+                        
+                        <Input
+                            type="switch"
+                            id="freeDeliverySwitch"
+                            name="freeDeliverySwitch"
+                            label={isFreeDeliverySelected ? 'YES' : 'NO'}
+                            checked={isFreeDeliverySelected}
+                            onChange={toggleFreeDelivery}
+                            style={{ cursor: 'pointer' }}
+                            inline
+                        />
+                        
+                        <span style={{ marginLeft: '10px' }}>
+                            {isFreeDeliverySelected ? <span style={{color:"Blue" , fontWeight:"bold"}}>YES</span> : <span style={{color:"red"}}>NO</span> }
+                        </span>
+                    </div>
+
                     {/* Submit */}
                     <div className="d-flex justify-content-between mt-4">
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => window.location.reload()}
-                    >
-                        Cancel
-                    </button>
-                    <button type="submit" className="btn btn-primary">
-                        Confirm
-                    </button>
+                        <button 
+                            type="submit" 
+                            className="btn btn-primary"
+                            onClick={confirmOrder}
+                            >
+                            Confirm
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={resetForm}
+                        >
+                            Cancel
+                        </button>
                     </div>
                    
                 </Col>

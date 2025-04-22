@@ -137,7 +137,7 @@ const AddProducts: React.FC = () => {
     
                 // Add the product data to the list of fetched products
                 fetchedProducts.push({
-                    id: doc.id,
+                    productId: doc.id,
                     ...productData,
                     mainImages,
                 });
@@ -441,7 +441,7 @@ const AddProducts: React.FC = () => {
           const batch = writeBatch(db); // Use batch for atomic updates
       
           reorderedProducts.forEach((product) => {
-            const productRef = doc(db, 'Products', product.id!); // 'products' collection, itemCode as the document ID
+            const productRef = doc(db, 'Products', product.productId!); // 'products' collection, itemCode as the document ID
             batch.update(productRef, { displayOrder: product.displayOrder });
           });
       
@@ -511,7 +511,7 @@ const AddProducts: React.FC = () => {
                                                         </thead>
                                                         <tbody>
                                                         {products.map((product, index) => (
-                                                            <Draggable key={product.id as any} draggableId={product.id as any} index={index}>
+                                                            <Draggable key={product.productId as any} draggableId={product.productId as any} index={index}>
                                                                 {(provided) => (
                                                                     <tr
                                                                     ref={provided.innerRef}
@@ -542,7 +542,7 @@ const AddProducts: React.FC = () => {
                                                                     <td>
                                                                         <div className="flex">
                                                                             <button type="button"
-                                                                                    className="delete-button" onClick={() => deleteProduct(product.id)}>Delete</button>
+                                                                                    className="delete-button" onClick={() => deleteProduct(product.productId)}>Delete</button>
                                                                             <button type="button"
                                                                                     className="edit-button" onClick={() => openEditModal(product)}>Edit</button>
                                                                         </div>
@@ -1103,8 +1103,8 @@ const AddProducts: React.FC = () => {
                                                     }
                                                   
                                                     // Call updateProduct with editedProduct?.id
-                                                    if (editedProduct?.id) {
-                                                      updateProduct(editedProduct.id); // Safe to call updateProduct with the editedProduct id
+                                                    if (editedProduct?.productId) {
+                                                      updateProduct(editedProduct.productId); // Safe to call updateProduct with the editedProduct id
                                                     }
                                                   }}
                                                 disabled={isButtonDisabled}

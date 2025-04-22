@@ -154,7 +154,7 @@ const ShoppingCart: React.FC = () => {
   // Function to find a product by its ID
   const findProductById = (id: string): Product | undefined => {
     // Find the product in the product list by ID
-    const product = productsList.find((product) => product.id === id);
+    const product = productsList.find((product) => product.productId === id);
     return product; // This can be undefined if not found
   };
   
@@ -178,7 +178,7 @@ const ShoppingCart: React.FC = () => {
       try {
         const querySnapshot = await getDocs(q);
         const products = querySnapshot.docs.map(doc => ({
-          id: doc.id,
+          productId: doc.id,
           ...doc.data()
         }));
         allProducts = [...allProducts, ...products];
@@ -196,7 +196,7 @@ const ShoppingCart: React.FC = () => {
   const updateCartList = () => {
     setCart(prevCart =>
       prevCart.map(cartItem => {
-        const product = availableCartProductsList.find(p => p.id === cartItem.productId);
+        const product = availableCartProductsList.find(p => p.productId === cartItem.productId);
 
         if (product) {
           return {
@@ -475,7 +475,6 @@ const ShoppingCart: React.FC = () => {
           itemCode: item.itemCode,
           title: item.title,
           price: item.price,
-          mainImage:item.mainImage,
           discount: item.discount,
           quantity: totalQuantity,
           sizes: nonZeroSizes, // sizes will now be an object with size and quantity
@@ -492,7 +491,7 @@ const ShoppingCart: React.FC = () => {
     const newOrder: Order = {
       // Similarly, handle tracking logic
       tracking: "",
-      amount: subtotal,
+      fullAmount: subtotal+ deliverCharges,
       deliverCharges: deliverCharges,
       orderItems: orderItems,
       createdUserId: user.uid,

@@ -452,8 +452,7 @@ const ProductPage: React.FC = () => {
 
           if (!itemExists) {
             const newCartItem:CartItem= {
-              productId: product.id,
-              genaratedCode: product.genaratedCode,
+              productId: product.productId,
               itemCode: product.itemCode,
               quantity: items,
               sizes: { [childData?.[1] as unknown as number]: quantity }// Assuming childData is an array and you want to store the second item

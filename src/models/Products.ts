@@ -1,7 +1,7 @@
 import { float } from "aws-sdk/clients/cloudfront";
 
     export interface Product {
-        id?: string;
+        productId?: string;
         genaratedCode?: string;
         itemCode?: string;
         name?:string;
