@@ -51,20 +51,18 @@ export const addOrUpdateBranch = async (
     if (!branchName.trim()) {
       throw new Error("Branch name cannot be empty.");
     }
-    if (!data || typeof data !== "object") {
+    if (data && typeof data !== "object") {
       throw new Error("Invalid data format.");
     }
-    if (!data.phones || !Array.isArray(data.phones)) {
+    if (data.phones && !Array.isArray(data.phones)) {
       throw new Error("Phones must be an array.");
     }
-    if (!data.address || typeof data.address !== "string") {
+    if (data.address && typeof data.address !== "string") {
       throw new Error("Address must be a string.");
     }
     // Normalize phone numbers
-    const normalizedPhones = data.phones.map((phone) => normalizePhoneNumber(phone)).filter(Boolean);
-    if (normalizedPhones.length === 0) {
-      throw new Error("No valid phone numbers provided.");
-    }
+    const normalizedPhones = data.phones ? data.phones.map((phone) => normalizePhoneNumber(phone)).filter(Boolean) : [];
+
     // Check if the branch already exists
     const snap = await getDoc(branchesDocRef);
     if (!snap.exists()) {

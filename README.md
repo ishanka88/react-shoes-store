@@ -1,6 +1,39 @@
-# Getting Started with Create React App
+## 👟 Shoe Store E-commerce App
 
-This p`roject was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern, full-featured e-commerce web application built with **React**, **Firebase**, and **Clerk** for user authentication. Users can browse and purchase shoes, while admins manage products and orders via a dashboard — all with real-time data and no traditional backend.
+
+---
+
+## 🚀 Features
+
+- 🔍 Product catalog with filters
+- 🛒 Shopping cart
+- 🔐 Clerk-based user authentication
+- 📦 Order management via Firebase Firestore
+- 🧑‍💼 Admin dashboard for managing inventory and orders
+- ☁️ Firebase as the real-time database
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend:** React
+- **Authentication:** [Clerk](https://clerk.dev/)
+- **Database:** Firebase Firestore
+- **Hosting (optional):** Firebase Hosting
+- **State Management:** React Context API / useState
+
+---
+
+## 📦 Getting Started
+
+1. **Clone the repo & install dependencies:**
+
+```bash
+git clone https://github.com/ishanka88/react-shoes-store.git
+cd react-shoes-store
+npm install
+
 
 ## Available Scripts
 
