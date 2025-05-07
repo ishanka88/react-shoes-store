@@ -1,3 +1,22 @@
+.custom-signin {
+    background-color: var(--Orange);
+    text-align: center;
+    align-items: center;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 550;
+    padding: 5px 15px;
+    border-radius: 7px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+  }
+  
+  .custom-signin:hover {
+    opacity: 0.8;
+  }
+  
+
 /* Hamburger Icon */
 .hamburger-icon {
     background: transparent;

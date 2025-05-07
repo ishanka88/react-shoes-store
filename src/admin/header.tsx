@@ -10,6 +10,7 @@ import { NavLink } from "react-router-dom";
 import { useAuth as clerkUseAuth, useUser as useUserClerk , UserButton } from "@clerk/clerk-react";
 import {  signOut as firebaseSignOut,onAuthStateChanged,User } from "firebase/auth";
 import {auth} from "../firebase/firebaseConfig"
+import { getBothCurrentAndLastTrackings } from "../firebase/systemDocument";
 
 
 
@@ -52,6 +53,35 @@ const AdminHeader: React.FC = () => {
     handleSignOut();
     }, [isSignedInClerk, signOutClerk, auth]);
 
+    
+    useEffect(() => {
+        getBothCurrentAndLastTrackings()
+          .then((res) => {
+            if (res) {
+                const [currentTracking, lastTracking] = res;
+                if(currentTracking && lastTracking){
+                    // Assuming currentTracking and lastTracking are numbers
+                    const count = lastTracking - currentTracking;
+                    if(count < 50){
+                        const flashMessage = document.getElementById("flash-message");
+                        if (flashMessage) {
+                            flashMessage.innerHTML = `Available tracking numbers - ${count}`;
+                            flashMessage.hidden = false; // Show the message
+                        } 
+                    }
+
+                }
+                    
+                    
+            } else {
+              console.log("No tracking data available.");
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching tracking data:", error);
+          });
+      }, []);
+      
 
     return (
         <React.Fragment>
@@ -74,10 +104,13 @@ const AdminHeader: React.FC = () => {
                                                     <li><NavLink to={RouteName.ORDERS} activeClassName="active">Orders</NavLink></li>
                                                     <li><NavLink to={RouteName.ADD_PRODUCTS} activeClassName="active">Products</NavLink></li>
                                                     <li><NavLink to={RouteName.CONTACT} activeClassName="active">Contact</NavLink></li>
+                                                    <li><NavLink to={RouteName.SETTING} activeClassName="active">Setting</NavLink></li>
                                                 </ul>
                                             </nav>
                                         </div>
+                                       
                                     </div>
+                            
                                     <div className="header-right1 d-flex align-items-center">
                                         <div className="search">
                                             <ul className="d-flex align-items-center">
@@ -107,6 +140,22 @@ const AdminHeader: React.FC = () => {
                     </div>
 
                 </header>
+                <div 
+                    id="flash-message"
+                    hidden={true} // Initially hidden
+                    style={{
+                        width: '100%',
+                        background: 'rgb(201, 6, 6)',
+                        color: 'yellow',
+                        fontWeight: 'bold',
+                        fontSize: '1.5rem',
+                        textAlign: 'center',
+                        padding: '0.5rem',
+                      }}
+                >
+                    {/* Available tracking numbers - 0 */}
+                </div>
+
             </div>
         </React.Fragment>
     );

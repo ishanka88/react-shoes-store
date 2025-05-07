@@ -95,7 +95,6 @@ const AddNewOrder: React.FC = () => {
         setIsFreeDeliverySelected(false);
 
         fetchLastOrderId();
-        refetchProducts()
     };
 
 
@@ -496,6 +495,7 @@ const AddNewOrder: React.FC = () => {
                 // Handle success (e.g., show success message)
                 alert("Order placed successfully!");
                 resetForm()
+                refetchProducts()
 
             } else {
                 if ('error' in response) {

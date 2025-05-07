@@ -306,6 +306,9 @@ const findProductById = (id: string): Product | undefined => {
                                         <li>
                                         <NavLink to={RouteName.CONTACT}>Contact</NavLink>
                                         </li>
+                                        <li>
+                                        <NavLink to={RouteName.ORDERS}>Orders</NavLink>
+                                        </li>
                                     </ul>
                                     </nav>
                                 </div>
@@ -366,8 +369,18 @@ const findProductById = (id: string): Product | undefined => {
                                                     />
                                                   </div>
                                                 ) : (
-                                                  <SignInButton>Sign In</SignInButton>
-                                                )}
+                                                  <div className="d-flex align-items-center">
+                                                    <div >
+                                                      <SignInButton>
+                                                        <button className=" custom-signin ">
+                                                          Sign In
+                                                        </button>
+                                                      </SignInButton>
+                                                    </div>
+                                                  </div>
+                                                  )}
+
+                                                  
                                               </li>
                                             </ul>
                                           </nav>
@@ -460,7 +473,7 @@ const findProductById = (id: string): Product | undefined => {
                                                                       />
                                                                     </div>
                                                               ) : (
-                                                                    <SignInButton >Sign In</SignInButton>
+                                                                    <SignInButton>Sign In</SignInButton>
                                                                   )}
                                                                 </li>
                                                               </ul>
@@ -513,9 +526,9 @@ const findProductById = (id: string): Product | undefined => {
 
         {/* Cart element*/}
         <div ref={shadowRef} className="shadow "></div>
-        <div className="cart-box ">
-                                        
-                <div className=" d-flex justify-content-between cart-para cart-heading">
+          <div className="cart-box ">
+              <div className="cart-heading">
+                <div className=" d-flex justify-content-between cart-para">
                     <div className=""  style={{padding:"0px 15px 0px 6px"}}>
                         Cart
                         
@@ -527,35 +540,41 @@ const findProductById = (id: string): Product | undefined => {
                 </div>
                 <hr className="cart-hr" />
 
-                <p ref={myRef3} className="cart-para empty-para" style={{padding:"20px 0px 0px 0px"}}>
-                Your cart is empty.
-                </p>
-                <div ref={myRef1} className="cart-item-div">
-                    <div className="w-100">
-                        {cartList.map((item: DisplayCartItem, index: number) => (
-                            <div key={item.id} className="d-flex justify-content-between align-items-center w-100" style={{padding:"10px 3px 0px 3px"}}> {/* Add key to each item for efficient re-renders */}
-                                <div className="d-flex" style={{padding:"0px 10px 0px 0px"}} >{index + 1}</div>
-                                <div className="cart-item-col1">
-                                    <img src={item.mainImage} className="thumbnail-image" style={{borderRadius:"5px"}} />
-                                </div>
-                                <div className="cart-item-col2 " style={{padding:"0px 0px 0px 10px"}}>
-                                    <div className="cart-para">
-                                        {item.title}
-                                    </div>
-                                    <div className="">
-                                        {"Rs. "}{item.price} x {item.quantity}{" = "}
-                                        <span className="item-amount" >  Rs. {(item.price && item.quantity ? item.price * item.quantity : 0).toFixed(2)}</span>
-                                    </div>
-                                </div>                          
-                            </div>
-                        ))}
+              </div>
+              <div className="cart-item-div">
+               
+                  <div ref={myRef3}>
+                    <p  className="cart-para empty-para" style={{padding:"20px 0px 0px 0px"}}>
+                    Your cart is empty.
+                    </p>
+                  </div>
+                  <div ref={myRef1}>
+                      <div className="w-100">
+                          {cartList.map((item: DisplayCartItem, index: number) => (
+                              <div key={item.id} className="d-flex justify-content-between align-items-center w-100" style={{padding:"10px 3px 0px 3px"}}> {/* Add key to each item for efficient re-renders */}
+                                  <div className="d-flex" style={{padding:"0px 10px 0px 0px"}} >{index + 1}</div>
+                                  <div className="cart-item-col1">
+                                      <img src={item.mainImage} className="thumbnail-image" style={{borderRadius:"5px"}} />
+                                  </div>
+                                  <div className="cart-item-col2 " style={{padding:"0px 0px 0px 10px"}}>
+                                      <div className="cart-para">
+                                          {item.title}
+                                      </div>
+                                      <div className="">
+                                          {"Rs. "}{item.price} x {item.quantity}{" = "}
+                                          <span className="item-amount" >  Rs. {(item.price && item.quantity ? item.price * item.quantity : 0).toFixed(2)}</span>
+                                      </div>
+                                  </div>                          
+                              </div>
+                          ))}
 
 
-                    </div>
-                </div>
-                <div ref={myRef2} className="checkout-div" style={{padding:"10px"}}>
-                    <button className="checkout-btn"   onClick={() => window.open("./cart", "_blank")}>checkout</button>
-                </div>
+                      </div>
+                  </div>                      
+              </div>
+              <div ref={myRef2} className="checkout-div" style={{padding:"10px"}}>
+                  <button className="checkout-btn"   onClick={() => window.open("./cart", "_blank")}>Checkout</button>
+              </div>
         </div>
       </div>
     </React.Fragment>

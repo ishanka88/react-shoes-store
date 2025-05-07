@@ -12,4 +12,6 @@ export enum RouteName {
   ABOUT = "/about",
   DASHBOARD = "/dashboard",
   PRODUCT_PAGE = "/product-details",
+  SETTING = "/setting",
+
 }

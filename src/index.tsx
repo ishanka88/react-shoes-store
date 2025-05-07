@@ -4,6 +4,8 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { ClerkProvider } from "@clerk/clerk-react"; // Import ClerkProvider
+import { UserProvider } from './context/UserContext';
+import { DataProvider } from './context/DataContext';
 
 // Get your Clerk Frontend API from .env file
 const PUBLISHABLE_KEY = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
@@ -19,7 +21,11 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
-      <App />
+      <UserProvider>
+        <DataProvider>
+          <App />
+        </DataProvider>
+      </UserProvider>,
     </ClerkProvider>
 </React.StrictMode>,
 );

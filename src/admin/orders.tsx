@@ -721,6 +721,21 @@ const Orders: React.FC = () => {
                                         </div>
                                   
                                     </div>
+                                    <div className="d-flex align-items-center">
+
+                                        <div style={{paddingRight:"20px"}}>
+                                            <label>
+                                                <input type="checkbox" value="option1" />
+                                                Website
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <label>
+                                                <input type="checkbox" value="option2" />
+                                                Manual
+                                            </label>
+                                        </div>
+                                    </div>
 
                                     <div className="properties__button text-center">
                                         <div className="d-flex" style={{paddingBottom:"10px", fontWeight:"bold"}}>

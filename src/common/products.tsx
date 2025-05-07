@@ -13,6 +13,7 @@ import classNames from "classnames";
 
 
 import { useProductData } from '../context/DataContext';
+import { RouteName } from "../RouteName";
 
 
 const CustomCarousel = ({ product, currentIndex, setCurrentIndex }: { product: Product, currentIndex: number, setCurrentIndex: React.Dispatch<React.SetStateAction<number>> }) => {
@@ -238,7 +239,7 @@ const Products: React.FC = () => {
                                     cursor: 'pointer'
                                   }}
                                   onClick={() => {
-                                    window.open(`/product_details?id=${product.productId}`, '_blank');
+                                    window.open(`${RouteName.PRODUCT_PAGE}?id=${product.productId}`);
                                   }}
                                 >
                                   <CustomCarousel
@@ -258,12 +259,11 @@ const Products: React.FC = () => {
                                   <h3>
                                     <a
                                       className="text-decoration-none text-dark"
-                                      href="product_details.html"
-                                      target="_blank"
                                       style={{
                                         transition: "color 0.3s",
                                         fontFamily: "Roboto, sans-serif",
                                         fontWeight: "bold",
+                                        cursor:"pointer",
                                       }}
                                       onMouseOver={(e) => {
                                         const target = e.target as HTMLAnchorElement;
@@ -272,6 +272,9 @@ const Products: React.FC = () => {
                                       onMouseOut={(e) => {
                                         const target = e.target as HTMLAnchorElement;
                                         target.style.color = "black";
+                                      }}
+                                      onClick={() => {
+                                          window.open(`${RouteName.PRODUCT_PAGE}?id=${product.productId}`);
                                       }}
                                     >
                                       Code : {product?.itemCode}

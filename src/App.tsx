@@ -22,6 +22,7 @@ import Checkout from "./common/checkout";
 import Products from "./common/products";
 import About from "./common/about";
 import ProductPage from "./common/productPage";
+import UserOrders from "./common/userOrders";
 import { RouteName } from "./RouteName";
 import { AuthService } from "./services/AuthService";
 import AdminFooter from "./admin/footer";
@@ -40,55 +41,27 @@ import { UserDetails } from './services/UserDetails';
 import { DataProvider } from './context/DataContext';
 import { ORDERS } from "./dbUtils";
 import AddNewOrder from "./admin/addNewOrder";
+import Setting from "./admin/setting";
+import { useUserContext } from "./context/UserContext";
+import { u } from "framer-motion/dist/types.d-6pKw1mTI";
 
 
 
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [isModerator, setIsModerator] = useState<boolean>(false);
+  // const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  // const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  // const [isModerator, setIsModerator] = useState<boolean>(false);
+  const { isAuthenticated, userData, isAdmin, isModerator } = useUserContext();
 
   const { isLoaded:isLodedClerk, isSignedIn: isSignedInClerk, signOut:signOutClerk ,getToken} = clerkUseAuth() 
 
-  const userDetails = new UserDetails();
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setIsAuthenticated(true);
-        UserDetails.getUserDetails()
-          .then((res) => {
-            const userData: any = res;
-            if(userData && userData.role){
-              if (userData.role === "admin") {
-                setIsAdmin(true);
-                setIsModerator(false)
-                
-              } else if (userData.role === "moderator") {
-                setIsModerator(true)
-                setIsAdmin(false);
-              }
-            }else{
-              setIsAdmin(false);
-              setIsModerator(false)
-            }
-          });
-      } else {
-        setIsAuthenticated(false);
-        setIsAdmin(false);
-      }
-    });
-
-    return () => unsubscribe(); // Cleanup the listener
-  }, [auth]);
+  console.log("userData",userData)
 
   if (!isLodedClerk) {
     // Show loading screen while determining authentication state
     return <div>Loading...</div>;
   }
-
-
 
 
   return (
@@ -103,6 +76,7 @@ const App: React.FC = () => {
                 <Route path={RouteName.ORDERS} component={Orders} />
                 <Route path={RouteName.ADD_PRODUCTS} component={AddProducts} />
                 <Route path={RouteName.CONTACT} component={ContactData} />
+                <Route path={RouteName.SETTING} component={Setting} />
               </Switch>
               <AdminFooter />
             </>
@@ -128,6 +102,7 @@ const App: React.FC = () => {
                 <Route path={RouteName.ABOUT} component={About} />
                 <Route path={RouteName.PRODUCT_PAGE} component={ProductPage} />
                 <Route path={RouteName.CART} component={Cart} />
+                <Route path={RouteName.ORDERS} component={UserOrders} />
               </Switch>
               <Footer />
             </>

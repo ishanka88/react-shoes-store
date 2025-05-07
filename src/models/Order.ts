@@ -3,6 +3,7 @@ import {Timestamp} from "firebase/firestore";
 export interface Order {
     orderId?: number;
     tracking?: string;
+    trackingLocation?: string;
     fromWebsite?: boolean; // website-true, others - false
     fullAmount?: number;
     deliverCharges?: number; // this is addded to the amount
@@ -16,6 +17,7 @@ export interface Order {
     contact2?: string;
     city? : string;
     paymentMethod?: string;
+    
 }
 export interface OrderItem {
     id: number;

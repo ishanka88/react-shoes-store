@@ -736,13 +736,11 @@ header {
 .cart-box {
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  max-height: 75vh;           /* controls total height */
   width: 300px;
-  height:auto;
   position: fixed;
   top: 75px;
   right: -30%;
-  /* height: 300px; */
   border-radius: 10px;
   padding: 0.7rem 0.5rem;
   box-shadow: 0px 0px 3px 1px rgba(0, 0, 0, 0.512);
@@ -750,21 +748,30 @@ header {
   opacity: 0;
   transition: all 400ms;
   z-index: 10000;
+    /* NEW: allow internal flex grow + scroll */
+  overflow: hidden;
 }
+
+.cart-heading {
+  /* your existing styles */
+  flex-shrink: 0;
+}
+
+.cart-item-div {
+  flex-grow: 1;           /* take available vertical space */
+  overflow-y: auto;       /* scroll if content overflows */
+  margin: 10px 0;         /* optional spacing */
+}
+
+
+.checkout-div {
+  flex-shrink: 0;
+  /* your existing styles */
+}
+
 .cart-box.cart-box-toggle {
   right: 1%;
   opacity: 1;
-}
-.cart-item-div {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 1.2rem;
-  overflow-y: auto; 
-  max-height: 1000px; /* Set a max height */
-  height: auto; /* Allow the height to adjust based on content */
-  overflow-y: auto;
-
 }
 .cart-hr {
   margin-top: 1rem;
@@ -813,7 +820,7 @@ header {
   text-align: center;
   border: none;
   outline: none;
-  font-size: 1rem;
+  font-size: 1.2rem;
   letter-spacing: 1px;
   color: white;
   background-color: var(--Orange);

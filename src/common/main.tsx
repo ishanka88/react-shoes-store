@@ -16,6 +16,7 @@ import { Product } from "../models/Products";
 
 import{db} from "../firebase/firebaseConfig"
 import { useProductData } from '../context/DataContext';
+import { RouteName } from "../RouteName";
 
 
 
@@ -277,7 +278,7 @@ const Main: React.FC = () => {
                                                 cursor: 'pointer'
                                                 }}
                                                 onClick={() => {
-                                                window.open(`product_details?id=${product.productId}`);
+                                                window.open(`${RouteName.PRODUCT_PAGE}?id=${product.productId}`);
                                                 }}
                                             >
                                                 <CustomCarousel
@@ -297,12 +298,11 @@ const Main: React.FC = () => {
                                                 <h3>
                                                 <a
                                                     className="text-decoration-none text-dark"
-                                                    href="product_details.html"
-                                                    target="_blank"
                                                     style={{
                                                     transition: "color 0.3s",
                                                     fontFamily: "Roboto, sans-serif",
                                                     fontWeight: "bold",
+                                                    cursor:"pointer",
                                                     }}
                                                     onMouseOver={(e) => {
                                                     const target = e.target as HTMLAnchorElement;
@@ -312,6 +312,9 @@ const Main: React.FC = () => {
                                                     const target = e.target as HTMLAnchorElement;
                                                     target.style.color = "black";
                                                     }}
+                                                    onClick={() => {
+                                                        window.open(`${RouteName.PRODUCT_PAGE}?id=${product.productId}`);
+                                                        }}
                                                 >
                                                     Code : {product?.itemCode}
                                                 </a>

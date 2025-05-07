@@ -92,7 +92,7 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder, 
     return null;  // If modal isn't open, don't render the content
   }
 
-  console.log(newOrder?.orderItems);
+
 
   // Regex for validating Sri Lankan contact numbers
   const phoneNumberRegex = /^(?:\+94|0)(71|72|75|76|77|78|79|11|21|22|23|24|25|26|27|28|29|31|32|33|34|35|36|37|38|39|41|42|43|44|45|46|47|48|49|51|52|53|54|55|56|57|58|59|61|62|63|64|65|66|67|68|69|81|82|83|84|85|86|87|88|89|91|92|93|94|95|96|97|98|99)\d{7}$/;
@@ -142,8 +142,10 @@ const CheckoutForm: React.FC<CheckoutModalProps> = ({ isOpen, toggle, newOrder, 
         if (response.success) {
           // Handle success (e.g., show success message)
 
+          
           alert("Order placed successfully!");
           // Assuming the checkout was successful, call the onSubmit callback
+
           saveCart()
           window.location.reload();
 

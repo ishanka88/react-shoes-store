@@ -47,23 +47,12 @@ import image8 from "./productImages/productimage2.jpeg";
 import image9 from "./productImages/productimage2.jpeg";
 import image10 from "./productImages/productimage2.jpeg";
 import { integer } from "aws-sdk/clients/cloudfront";
+import { PRODUCTS } from "../dbUtils";
+import { db } from "../firebase/firebaseConfig";
 
 // import video1 from "./media/video1.mp4"
 
-// Initialize Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyCeJaXISrsrsZW0M5xNZBLtSBH6IhvbUpA",
-  authDomain: "tacco-a1194.firebaseapp.com",
-  projectId: "tacco-a1194",
-  storageBucket: "tacco-a1194.firebasestorage.app",
-  messagingSenderId: "1030388201429",
-  appId: "1:1030388201429:web:ee4b254cba13c557052f5c",
-  measurementId: "G-FRD63MGYB0"
-};
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const storage = getStorage(app);
 
 
 interface CustomDropdownProps {
@@ -243,6 +232,8 @@ const ProductPage: React.FC = () => {
 
     const productMedia: Media[] = [];
 
+    
+
     if (product?.mainImages.length >0){
       for (const image of product?.mainImages) {
           productMedia.push({ src: image, type: "image" })
@@ -320,16 +311,16 @@ const ProductPage: React.FC = () => {
       });
     };
 
-
     useEffect(() => {
       const fetchProduct = async () => {
         try{
           const urlParams = new URLSearchParams(location.search);
           const productId = urlParams.get('id');
           
+          
           if (productId) {
             try {
-              const productRef = doc(db, "Products", productId);
+              const productRef = doc(db, PRODUCTS, productId);
               const docSnap = await getDoc(productRef);
               
               if (docSnap.exists()) {
@@ -337,7 +328,7 @@ const ProductPage: React.FC = () => {
               
                 // Add the document ID to the product data
                 const productWithId = {
-                  id: docSnap.id,  // Add document ID here
+                  productId: docSnap.id,  // Add document ID here
                   ...product,      // Spread the rest of the product data
                 };
               
@@ -640,17 +631,24 @@ const ProductPage: React.FC = () => {
                                                       </span>
                                                     </div>
                                                     <div className="d-flex  justify-content-start align-item-center " >
-                                                      <span  className="discount hero-subHeading " style={{margin:"0px"}}>&nbsp;{product.discount===0 ?"":`${product.discount}%`}</span>
+                                                      {product.discount===0? "":<span className="discount hero-subHeading " style={{margin:"0px"}}>&nbsp;{product.discount}%</span>}
+
                                                     </div>
                                                   </div>
-
-                                                  <div className="d-flex justify-content-start" >
-                                                      <del className="discount2 hero-para ">Rs. {product.price?.toLocaleString(undefined, { 
-                                                            minimumFractionDigits: 2, 
-                                                            maximumFractionDigits: 2 
-                                                          })}</del>
-                                                  </div>
-                                                  <div className="size-component">
+                                                  {product.discount!==0?
+                                                    <>
+                                                      <div className="d-flex justify-content-start" >
+                                                          <del className="discount2 hero-para ">Rs. {product.price?.toLocaleString(undefined, { 
+                                                                minimumFractionDigits: 2, 
+                                                                maximumFractionDigits: 2 
+                                                              })}</del>
+                                                      </div>
+                                                    </>
+                                                  
+                                                    :
+                                                    ""
+                                                  }
+                                                  <div className="size-component" style={{ marginTop: product.discount!==0 ? "0px" : "15px"}}>
                                                     <Row>
                                                         <Col xxl={7} xl={7} lg={7} md={5} sm={8} xs={10}>
                                                             <SizesComponent product={product}/>

@@ -1,6 +1,6 @@
 import { getAuth, IdTokenResult, User } from "firebase/auth";
 import { AuthService } from "./AuthService";
-import {Customer} from "../models/Customer"
+import {UserInfo} from "../models/UserInfo"
 
 // Get the auth instance
 const auth = getAuth();
@@ -28,14 +28,15 @@ export class UserDetails {
 
         if (!userDocData) {
           // If no document exists, create a new document in the 'customers' collection
-          const newCustomerData: Customer = {
-            _id: user.uid,
+          const newCustomerData: UserInfo = {
+            id: user.uid,
             name: user.displayName || 'New User', // You can modify this based on user data
             address: '',
             city: '',
             tel1: '',
             tel2: '',
-            cart: [] // Assuming no cart initially
+            cart: [], // Assuming no cart initially
+            orders: [] // Assuming no cart initially
           };
 
           customerDetails = AuthService.addNewCustomer(newCustomerData,user.uid)

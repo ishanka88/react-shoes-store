@@ -1,11 +1,11 @@
 import axios from "axios";
 import { AppResponse } from "../models/Response";
-import { User, UserDetails } from "../models/User";
+import { UserInfo } from "../models/UserInfo";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { addDoc, collection, doc, getDoc, getDocs, query, where,setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, query, where,setDoc,updateDoc, arrayUnion } from 'firebase/firestore';
 import { auth, db } from "../firebase/firebaseConfig";
 import { CUSTOMERS } from "../dbUtils";
-import {Customer} from "../models/Customer"
+
 
 
 export interface UserLoginData {
@@ -20,7 +20,7 @@ export interface UserUpdateData {
 
 export class AuthService {
 
-  public static async addNewCustomer(newCustomerData:Customer,uid:string) {
+  public static async addNewCustomer(newCustomerData:UserInfo,uid:string) {
     try {
       // Reference to the user's document in the 'customers' collection
       const userDocRef = doc(db,CUSTOMERS,uid);
@@ -39,9 +39,9 @@ export class AuthService {
     try {
       const q = query(collection(db, CUSTOMERS), where('email', '==', email));
       const querySnapshot = await getDocs(q);
-      const data: User[] = [];
+      const data: UserInfo[] = [];
       querySnapshot.forEach(doc => {
-        const donor = doc.data() as User;
+        const donor = doc.data() as UserInfo;
         data.push(donor);
       });
       return data[0];
@@ -69,6 +69,20 @@ export class AuthService {
     }
   }
   
-
+  public static async  addOrderIdToCustomer (customerId: string, orderId: number){
+    try {
+      const customerRef = doc(db, CUSTOMERS, customerId);
+  
+      await updateDoc(customerRef, {
+        orders: arrayUnion(orderId),
+      });
+  
+      console.log("Order ID added to customer successfully.");
+      return true;
+    } catch (error) {
+      console.error("Error adding order ID to customer:", error);
+      return false;
+    }
+  };
 
 }

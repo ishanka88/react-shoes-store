@@ -3,7 +3,7 @@ import { addDoc, collection, getDocs, query, where,updateDoc } from 'firebase/fi
 import { auth, db } from "../firebase/firebaseConfig";
 import { CUSTOMERS, PRODUCTS, CONTACTUS } from "../dbUtils";
 import { User } from "@firebase/auth";
-import { UserDetails } from "../models/User";
+import { UserInfo } from "../models/UserInfo";
 import { Product } from "../models/Products";
 import { Contact } from "../models/Contactus";
 
@@ -12,9 +12,9 @@ export class AdminService {
         try {
             const q = query(collection(db, CUSTOMERS), where('role', '==', 'USER'));
             const querySnapshot = await getDocs(q);
-            const data: UserDetails[] = [];
+            const data: UserInfo[] = [];
             querySnapshot.forEach(doc => {
-                const donor = doc.data() as UserDetails;
+                const donor = doc.data() as UserInfo;
                 console.log(donor)
                 donor.id = doc.id;
                 data.push(donor);

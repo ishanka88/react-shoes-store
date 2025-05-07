@@ -2,14 +2,24 @@ import { getFirestore, doc, runTransaction ,Timestamp} from "firebase/firestore"
 import { Order } from "../models/Order";
 import { Product } from "../models/Products";
 import { ORDERS,SYSTEM , PRODUCTS} from "../dbUtils";
-import { db } from "./firebaseConfig";
+import { auth, db } from "./firebaseConfig";
 import { NEW_ORDER } from "../utils/parcelsStatus";
+import { AuthService } from "../services/AuthService";
+import { useId } from "react";
+import { useAuth } from "@clerk/clerk-react";
 
 
 export async function placeNewOrder(order: Order , fromWebsite:boolean) {
   const systemRef = doc(db, SYSTEM, "order_counter");
 
   try {
+
+    if(fromWebsite){
+      const user = auth.currentUser;
+      if(!user?.uid){
+        throw new Error(`User not found.`);
+      }
+    }
 
     const result = await runTransaction(db, async (transaction) => {
       // 1. Read the system document first
@@ -126,11 +136,18 @@ export async function placeNewOrder(order: Order , fromWebsite:boolean) {
         });
       });
 
+      // 7. update cudtomer order ids
+
+      if(fromWebsite){
+        const user = auth.currentUser;
+        if(user?.uid){
+          await AuthService.addOrderIdToCustomer(user?.uid, newOrderId)
+        }
+      }
+      
+
       return { success: true, orderId: newOrderId };
     });
-
-
-
 
     return result;
   } catch (error: unknown) {
